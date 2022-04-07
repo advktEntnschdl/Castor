@@ -145,7 +145,7 @@ for job in studyDict["jobs"].values():
     os.remove("temp.pdf")
 
     cmd = "pdftk {logoFn} stamp {fn}.pdf output temp.pdf".format(
-        logoFn="/".join([wDir, "AFB_A4Landscape.pdf"]), fn=job["name"]
+        logoFn="/".join([wDir, "UIBK_A4Landscape.pdf"]), fn=job["name"]
     )
     os.system(cmd)
     os.rename("temp.pdf", job["name"]+".pdf")
