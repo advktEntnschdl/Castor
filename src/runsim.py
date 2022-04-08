@@ -56,6 +56,7 @@ studyDict = {
     "jobs": {},
 }
 
+studyDict.update({"jobs": {}})
 studyDict["jobs"].update(getJobDict(studyDict))
 
 os.mkdir(studyName)
@@ -148,7 +149,7 @@ for job in studyDict["jobs"].values():
         logoFn="/".join([wDir, "UIBK_A4Landscape.pdf"]), fn=job["name"]
     )
     os.system(cmd)
-    os.rename("temp.pdf", job["name"]+".pdf")
+    os.rename("temp.pdf", job["name"] + ".pdf")
 
     # plotList.append("/".join([os.getcwd(), "plot.pdf"]))
     # contourList.append("/".join([os.getcwd(), "contour.png"]))

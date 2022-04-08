@@ -1,8 +1,8 @@
 import argparse
 
-# from src.reader import readConfigFromJson
+from src.reader import readConfig
 # from src.optimizer import runOptimization
-# from src.journal import *
+from src.journal import *
 
 if __name__ == "__main__":
 
@@ -11,7 +11,11 @@ if __name__ == "__main__":
         description="A tool for running parameter studies",
     )
 
-    # parser.add_argument('file', type=str,  nargs = 1, )
+    parser.add_argument(
+        "file",
+        type=str,
+        nargs=1,
+    )
     # parser.add_argument(    "--parallel",
     #                        type=int,
     #                        default=0,
@@ -22,9 +26,10 @@ if __name__ == "__main__":
     #                        default=False)
 
     args = parser.parse_args()
-    # printHeader()
+    printHeader()
 
-    # message( " reading config from {:}... ".format( args.file[0]) )
-    config = readConfigFromJson(args.file[0])
+    message(" reading config from {:}... ".format(args.file[0]))
+    config = readConfig(args.file[0])
 
-    success = runStudy(config, args)
+    print(config)
+    # success = runStudy(config, args)
