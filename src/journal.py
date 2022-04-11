@@ -2,7 +2,7 @@ from rich import print
 
 def printHeader( ):
     printSepline()
-    print( "|{:^70s}|".format( "NOTBUZZARD" ) )
+    print( "|{:^70s}|".format( "CASTOR" ) )
     print( "|{:^70s}|".format( "" ) )
     print( "|{:^70s}|".format( "-- MaterialModelingToolbox --" ) )
     print( "|{:^70s}|".format( "github.com/MAteRialMOdelingToolbox" ) ) 
