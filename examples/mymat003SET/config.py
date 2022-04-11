@@ -23,7 +23,11 @@ config = (
     {
         "parameterStudies": {
             studyName: {
-                "type": "EdelweissFE",
+                "type": "edelweiss",
+                "edelweissConfig": {
+                    "executable": "~/projects/EdelweissFE/edelweiss.py",
+                    "numThreads": 1,
+                    },
                 "resDir": studyName,
                 "replaceDefs": {
                     "inpFile": {"paramDict": paramDict, "templateFile": templateFile},
