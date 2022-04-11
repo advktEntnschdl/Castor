@@ -19,23 +19,21 @@ paramDict = {
 # wDir = os.getcwd()
 
 # ---------------------- only config dir is read
-config = (
-    {
-        "parameterStudies": {
-            studyName: {
-                "type": "edelweiss",
-                "edelweissConfig": {
-                    "executable": "~/projects/EdelweissFE/edelweiss.py",
-                    "numThreads": 1,
-                },
-                "resDir": studyName,
-                "replaceDefs": {
-                    "inpFile": {"paramDict": paramDict, "templateFile": templateFile},
-                    "": {"paramDict": {}, "templateFile": ""},
-                    # add replace instructions here
-                },
-                "active": True,
+config = {
+    "parameterStudies": {
+        studyName: {
+            "type": "edelweiss",
+            "edelweissConfig": {
+                "executable": "~/projects/EdelweissFE/edelweiss.py",
+                "inputFile": "triaxTemplate.inp",
+                "numThreads": 1,
             },
+            "resDir": studyName,
+            "replaceInstructions": {
+                "triaxTemplate.inp": paramDict,
+                # add replace instructions here
+            },
+            "active": True,
         },
     },
-)
+}
