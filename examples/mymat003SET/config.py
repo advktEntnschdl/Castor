@@ -30,7 +30,7 @@ config = (
                     "": {"paramDict": {}, "templateFile": ""},
                     # add replace instructions here
                 },
-                "remove": True,
+                "active": True,
             },
         }
     },
