@@ -1,5 +1,9 @@
 import itertools
 import os
+import time
+import subprocess
+
+from .journal import message
 
 
 class Job:
@@ -11,12 +15,44 @@ class Job:
 
         self.studyDict = studyDict
 
+    def generateInputFromTemplates(self):
+        for templateFile, replaceDict in self.replaceDef:
+            fileFromTemplateFile(
+                os.path.join(self.resDir, templateFile),
+                os.path.join(self.studyDict["resDir"], templateFile),
+                replaceDict,
+            )
+
     def run(self):
+        message(" ... running job " + self.name)
         os.mkdir(self.resDir)
+        self.generateInputFromTemplates()
+
         os.chdir(self.resDir)
-        os.mkdir("test2")
+
+        if self.type == "edelweiss":
+            envVars = dict(os.environ)
+            envVars.update(
+                {
+                    "OMP_NUM_THREADS": str(
+                        self.studyDict["edelweissConfig"]["numThreads"]
+                    )
+                }
+            )
+            args = [
+                "python",
+                self.studyDict["edelweissConfig"]["executable"],
+                self.studyDict["edelweissConfig"]["inputFile"],
+                "--noplot",
+            ]
+            with open("outStream.txt", "w+") as f:
+                subprocess.run(args, stdout=f, stderr=f, env=envVars)
+            while not any(".csv" in fn for fn in os.listdir(self.resDir)):
+                time.sleep(0.1)
+
         os.chdir(self.studyDict["resDir"])
-        return True
+
+        return 0
 
 
 def generateJobListFromConfig(studyName, studyDict):
@@ -28,7 +64,7 @@ def generateJobListFromConfig(studyName, studyDict):
     return jobList
 
 
-def file_from_template_file(filename, templatefilename, replacedict):
+def fileFromTemplateFile(filename, templatefilename, replacedict):
     templatefile = open(templatefilename, "r")
     file = open(filename, "w+")
 
@@ -79,34 +115,3 @@ def getParamStr(replaceDefsPerJob):
     paramStr = "_".join(auxList)
 
     return paramStr
-
-
-# def getJobDict(studyDict):
-#    jobDict = {}
-#    paramDict = studyDict["paramDict"]
-#
-#    params = paramDict.keys()
-#    groupedVals = list(itertools.product(*(paramDict[key] for key in paramDict)))
-#
-#    for valGroup in groupedVals:
-#        auxList = [None] * (len(params) * 2)
-#        auxList[1::2] = [str(item) for item in valGroup]  # type: ignore <- pyright does not like slices of type None lists
-#        auxList[::2] = [item.replace("_", "") for item in params]  # type: ignore
-#
-#        paramStr = "_".join(auxList)  # type: ignore
-#
-#        # jobName = "_".join([studyDict["studyName"], paramStr])
-#        jobName = paramStr
-#        replaceDict = dict(zip(params, valGroup))
-#
-#        jobDict.update(
-#            {
-#                jobName: {
-#                    "name": jobName,
-#                    "subfolder": paramStr,
-#                    "replaceDict": replaceDict,
-#                    "paramStr": paramStr,
-#                }
-#            }
-#        )
-#    return jobDict

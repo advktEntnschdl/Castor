@@ -16,11 +16,9 @@ if __name__ == "__main__":
         type=str,
         nargs=1,
     )
-    # parser.add_argument(    "--parallel",
-    #                        type=int,
-    #                        default=0,
-    #                        choices= [0, 1, 2, 3],
-    #                        help=" 0: no parallelization (default); 1: parallel execution of simulations; 2:run parallel minimize (L-BGFS method only); 3: combines option 1 and 2 (L-BGFS method only)")
+    parser.add_argument("--parallel", action="store_true", default=False)
+
+    # help=" 0: no parallelization (default); 1: parallel execution of simulations; 2:run parallel minimize (L-BGFS method only); 3: combines option 1 and 2 (L-BGFS method only)")
     # parser.add_argument(    "--createPlots",
     #                        action="store_true",
     #                        default=False)

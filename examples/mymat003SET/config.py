@@ -24,7 +24,7 @@ config = {
         studyName: {
             "type": "edelweiss",
             "edelweissConfig": {
-                "executable": "~/projects/EdelweissFE/edelweiss.py",
+                "executable": "/home/paul/projects/EdelweissFE/edelweiss.py",
                 "inputFile": "triaxTemplate.inp",
                 "numThreads": 1,
             },
