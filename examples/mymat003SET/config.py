@@ -27,7 +27,7 @@ config = (
                 "edelweissConfig": {
                     "executable": "~/projects/EdelweissFE/edelweiss.py",
                     "numThreads": 1,
-                    },
+                },
                 "resDir": studyName,
                 "replaceDefs": {
                     "inpFile": {"paramDict": paramDict, "templateFile": templateFile},
@@ -36,6 +36,6 @@ config = (
                 },
                 "active": True,
             },
-        }
+        },
     },
 )
