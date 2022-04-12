@@ -1,8 +1,9 @@
 import argparse
+import os
 
 from src.reader import readConfig
-from src.runner import runStudies
 from src.journal import *
+from src.jobUtils import *
 
 if __name__ == "__main__":
 
@@ -29,4 +30,15 @@ if __name__ == "__main__":
     message(" reading config from {:}... ".format(args.file[0]))
     config = readConfig(args.file[0])
 
-    success = runStudies(config, args)
+    printSepline()
+
+    upmostDir = os.getcwd()
+    if "parameterStudies" in config:
+        for studyName, studyDict in config["parameterStudies"].items():
+            study = Study(studyDict)
+            if study.active:
+                message(" " + study.name + " (active) ")
+                study.run(args)
+                os.chdir(upmostDir)
+            else:
+                message("  -->  " + studyName + "(inactive)")

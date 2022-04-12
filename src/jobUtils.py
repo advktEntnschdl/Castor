@@ -4,6 +4,7 @@ import time
 import subprocess
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import inspect
 
 from .journal import message
 
@@ -12,6 +13,8 @@ class Study:
     def __init__(self, studyDict):
         self.name = studyDict.get("name")
         self.resDir = os.path.abspath(studyDict.get("resDir"))
+        (head, tail) = os.path.split(inspect.stack()[1].filename)
+        self.shareDir = os.path.join(os.path.abspath(head), "share")
 
         self.type = studyDict.get("type")
         if self.type == "EdelweissFE":
@@ -19,9 +22,21 @@ class Study:
 
         self.replaceInstructions = studyDict.get("replaceInstructions")
 
-        self.jobList = self.generateJobListFromConfig()
+        self.ppInstructions = studyDict["postProcessingInstructions"]
+        ppFuns = self.ppInstructions.get("afterStudy")
+        if ppFuns:
+            if type(ppFuns) == list:
+                self.ppFunList = ppFuns
+            else:
+                self.ppFunList = [ppFuns]
+        else:
+            self.ppFunList = []
 
         self.active = studyDict.get("active") == True
+
+        self.generateJobListFromConfig()
+
+        return
 
     def run(self, args):
         os.mkdir(self.resDir)
@@ -39,7 +54,16 @@ class Study:
         else:
             for job in self.jobList:
                 job.run()
-        return False
+
+        self.performPostProcessing()
+
+        return
+
+    def performPostProcessing(self):
+        for ppFun in self.ppFunList:
+            ppFun(self)
+
+        return
 
     def generateJobListFromConfig(self):
         replaceDefsPerJob = getReplaceDefsPerJob(self)
@@ -47,9 +71,9 @@ class Study:
         jobList = []
         for replaceDef in replaceDefsPerJob:
             jobList.append(Job(replaceDef, self))
-        return jobList
+        self.jobList = jobList
 
-        # runStudy(self)
+        return
 
 
 class Job:
@@ -60,6 +84,23 @@ class Job:
         self.type = study.type
         self.study = study
 
+        ppFuns = study.ppInstructions.get("afterJob")
+        if ppFuns:
+            if type(ppFuns) == list:
+                self.ppFunList = ppFuns
+            else:
+                self.ppFunList = [ppFuns]
+        else:
+            self.ppFunList = []
+
+        return
+
+    def performPostProcessing(self):
+        for ppFun in self.ppFunList:
+            ppFun(self)
+
+        return
+
     def generateInputFromTemplates(self):
         for templateFile, replaceDict in self.replaceDef:
             fileFromTemplateFile(
@@ -67,6 +108,7 @@ class Job:
                 os.path.join(self.study.resDir, templateFile),
                 replaceDict,
             )
+        return
 
     def run(self):
         message(" ... running job " + self.name)
@@ -75,7 +117,7 @@ class Job:
 
         os.chdir(self.resDir)
 
-        if self.type == "edelweiss":
+        if self.type == "EdelweissFE":
             envVars = dict(os.environ)
             envVars.update(
                 {"OMP_NUM_THREADS": str(self.study.edelweissConfig["numThreads"])}
@@ -91,9 +133,11 @@ class Job:
             while not any(".csv" in fn for fn in os.listdir(self.resDir)):
                 time.sleep(0.1)
 
+        self.performPostProcessing()
+
         os.chdir(self.study.resDir)
 
-        return 0
+        return
 
 
 def fileFromTemplateFile(filename, templatefilename, replacedict):
@@ -107,6 +151,8 @@ def fileFromTemplateFile(filename, templatefilename, replacedict):
 
     templatefile.close()
     file.close()
+
+    return
 
 
 def getReplaceDefsPerJob(study):
