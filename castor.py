@@ -1,7 +1,7 @@
 import argparse
 
 from src.reader import readConfig
-from src.runner import runStudy
+from src.runner import runStudies
 from src.journal import *
 
 if __name__ == "__main__":
@@ -29,4 +29,4 @@ if __name__ == "__main__":
     message(" reading config from {:}... ".format(args.file[0]))
     config = readConfig(args.file[0])
 
-    success = runStudy(config, args)
+    success = runStudies(config, args)

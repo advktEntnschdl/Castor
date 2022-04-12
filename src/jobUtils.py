@@ -2,24 +2,69 @@ import itertools
 import os
 import time
 import subprocess
+import shutil
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from .journal import message
 
 
-class Job:
-    def __init__(self, replaceDef, studyDict):
-        self.name = getParamStr(replaceDef)
-        self.resDir = os.path.abspath(self.name)
-        self.replaceDef = replaceDef
-        self.type = studyDict.get("type")
+class Study:
+    def __init__(self, studyDict):
+        self.name = studyDict.get("name")
+        self.resDir = os.path.abspath(studyDict.get("resDir"))
 
-        self.studyDict = studyDict
+        self.type = studyDict.get("type")
+        if self.type == "EdelweissFE":
+            self.edelweissConfig = studyDict.get("edelweissConfig")
+
+        self.replaceInstructions = studyDict.get("replaceInstructions")
+
+        self.jobList = self.generateJobListFromConfig()
+
+        self.active = studyDict.get("active") == True
+
+    def run(self, args):
+        os.mkdir(self.resDir)
+
+        for templateFile in self.replaceInstructions:
+            shutil.copy(templateFile, os.path.join(self.resDir, templateFile))
+
+        os.chdir(self.resDir)
+
+        if args.parallel:
+            message("parallel execution")
+            nJobs = len(self.jobList)
+            with ProcessPoolExecutor(max_workers=nJobs) as executor:
+                futureRes = {executor.submit(job.run()): job for job in self.jobList}
+        else:
+            for job in self.jobList:
+                job.run()
+        return False
+
+    def generateJobListFromConfig(self):
+        replaceDefsPerJob = getReplaceDefsPerJob(self)
+
+        jobList = []
+        for replaceDef in replaceDefsPerJob:
+            jobList.append(Job(replaceDef, self))
+        return jobList
+
+        # runStudy(self)
+
+
+class Job:
+    def __init__(self, replaceDef, study):
+        self.name = getParamStr(replaceDef)
+        self.resDir = os.path.join(study.resDir, self.name)
+        self.replaceDef = replaceDef
+        self.type = study.type
+        self.study = study
 
     def generateInputFromTemplates(self):
         for templateFile, replaceDict in self.replaceDef:
             fileFromTemplateFile(
                 os.path.join(self.resDir, templateFile),
-                os.path.join(self.studyDict["resDir"], templateFile),
+                os.path.join(self.study.resDir, templateFile),
                 replaceDict,
             )
 
@@ -33,16 +78,12 @@ class Job:
         if self.type == "edelweiss":
             envVars = dict(os.environ)
             envVars.update(
-                {
-                    "OMP_NUM_THREADS": str(
-                        self.studyDict["edelweissConfig"]["numThreads"]
-                    )
-                }
+                {"OMP_NUM_THREADS": str(self.study.edelweissConfig["numThreads"])}
             )
             args = [
                 "python",
-                self.studyDict["edelweissConfig"]["executable"],
-                self.studyDict["edelweissConfig"]["inputFile"],
+                self.study.edelweissConfig["executable"],
+                self.study.edelweissConfig["inputFile"],
                 "--noplot",
             ]
             with open("outStream.txt", "w+") as f:
@@ -50,18 +91,9 @@ class Job:
             while not any(".csv" in fn for fn in os.listdir(self.resDir)):
                 time.sleep(0.1)
 
-        os.chdir(self.studyDict["resDir"])
+        os.chdir(self.study.resDir)
 
         return 0
-
-
-def generateJobListFromConfig(studyName, studyDict):
-    replaceDefsPerJob = getReplaceDefsPerJob(studyName, studyDict)
-
-    jobList = []
-    for replaceDef in replaceDefsPerJob:
-        jobList.append(Job(replaceDef, studyDict))
-    return jobList
 
 
 def fileFromTemplateFile(filename, templatefilename, replacedict):
@@ -77,9 +109,9 @@ def fileFromTemplateFile(filename, templatefilename, replacedict):
     file.close()
 
 
-def getReplaceDefsPerJob(studyName, studyDict):
+def getReplaceDefsPerJob(study):
     replaceDefsPerFile = []
-    for templateFile, paramDict in studyDict["replaceInstructions"].items():
+    for templateFile, paramDict in study.replaceInstructions.items():
         replaceDefsPerFile.append(
             [
                 (templateFile, replaceDict)

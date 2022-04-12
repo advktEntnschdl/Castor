@@ -26,7 +26,8 @@ paramDict2 = {
 config = {
     "parameterStudies": {
         studyName: {
-            "type": "edelweiss",
+            "name": studyName,
+            "type": "EdelweissFE",
             "edelweissConfig": {
                 "executable": "~/projects/EdelweissFE/edelweiss.py",
                 "numThreads": 1,
