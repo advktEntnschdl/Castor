@@ -1,4 +1,5 @@
 import itertools
+import operator
 import os
 import time
 import subprocess
@@ -46,14 +47,15 @@ class Study:
 
         os.chdir(self.resDir)
 
+        runJob = operator.methodcaller("run")
         if args.parallel:
-            message("parallel execution")
             nJobs = len(self.jobList)
             with ProcessPoolExecutor(max_workers=nJobs) as executor:
-                futureRes = {executor.submit(job.run()): job for job in self.jobList}
+                for result in executor.map(runJob, self.jobList):
+                    pass
         else:
-            for job in self.jobList:
-                job.run()
+            for result in map(runJob, self.jobList):
+                pass
 
         self.performPostProcessing()
 
