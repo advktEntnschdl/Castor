@@ -12,6 +12,7 @@ import matplotlib
 import matplotlib.style
 from matplotlib import pyplot as plt
 from matplotlib import rcParams
+import PyPDF4
 
 paper = (5.875, 4.125)  # size in inches
 # paperA4 = (5.875, 4.125) # size in inches
@@ -25,21 +26,16 @@ import PyPDF4
 mergedPdf = PyPDF4.PdfFileMerger()
 # ---------------------------------------
 
-pythonCmd = "/usr/bin/python"
-
 studyName = "_SET"
 studyName += "_"
 studyName += datetime.now().strftime("%Y%m%dT%H%M")
 
 templateFile = "triaxTemplate.inp"
 
-paramDict = {
-    "_PINI_": [10, 20, 30],
-    "_GC2G_": [0.1],
-}
-
 
 def generatePdfPage(job):
+    os.chdir(job.resDir)
+
     fig, ax = plt.subplots()
     fig.set_size_inches(paper[0], paper[1])
     ax.set_xlabel("U")
@@ -47,15 +43,12 @@ def generatePdfPage(job):
     ax.grid()
     lines = []
 
-    cwd = os.getcwd()
-    os.chdir(job.resDir)
-
     xData = -np.loadtxt("U.csv")[:, 1]
     yData = -np.loadtxt("RF.csv")[:, 1]
 
-    if len(lines):
-        lines[-1].set_alpha(0.0)  # alpha = 0.0 hides the previously drawn line
-        lines[-1].set_color("gray")
+    # if len(lines):
+    #    lines[-1].set_alpha(0.0)  # alpha = 0.0 hides the previously drawn line
+    #    lines[-1].set_color("gray")
 
     lines.extend(ax.plot(xData, yData))
 
@@ -65,23 +58,21 @@ def generatePdfPage(job):
     clrString = "POINTS displacement magnitude"
     # clrString = "CELLS strain \\(partial\\)"
     # clrString = "CELLS e \\(partial\\)"
-    cmd = " ".join(
-        [
-            pythonCmd,
-            "~/projects/pvpython/renderWarped3D.py",
-            "--case=esExport.case",
-            "--dpi=300",
-            "--width={}".format(paper[0] / 2),
-            "--height={}".format(paper[1]),
-            "--scalefactor=1.0",
-            "--out=contour.png",
-            "--colorby",
-            clrString,
-        ]
-    )
-    os.system(cmd)
 
-    time.sleep(0.1)
+    pythonCmd = "/usr/bin/python"
+    args = [
+        pythonCmd,
+        "~/projects/pvpython/renderWarped3D.py",
+        "--case=esExport.case",
+        "--dpi=300",
+        "--width={}".format(paper[0] / 2),
+        "--height={}".format(paper[1]),
+        "--scalefactor=1.0",
+        "--out=contour.png",
+        "--colorby",
+        clrString,
+    ]
+    subprocess.run(" ".join(args), shell=True)
 
     args = [
         "pdfjam",
@@ -94,8 +85,6 @@ def generatePdfPage(job):
         "plot.pdf",
         "contour.png",
     ]
-    # os.system(" ".join(args))
-    # subprocess.run(args)
     subprocess.run(" ".join(args), shell=True)
 
     args = [
@@ -109,8 +98,6 @@ def generatePdfPage(job):
         "{}.pdf".format(job.name),
         "temp.pdf",
     ]
-    # os.system(" ".join(args))
-    # subprocess.run(args)
     subprocess.run(" ".join(args), shell=True)
     os.remove("temp.pdf")
 
@@ -122,15 +109,48 @@ def generatePdfPage(job):
         "output",
         "temp.pdf",
     ]
-    # os.system(" ".join(args))
-    # subprocess.run(args)
     subprocess.run(" ".join(args), shell=True)
     os.rename("temp.pdf", job.name + ".pdf")
 
-    os.chdir(cwd)
-
     return
 
+
+def generateOverview(study):
+    mergedPdf = PyPDF4.PdfFileMerger()
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(paper[0], paper[1])
+    ax.set_xlabel("U")
+    ax.set_ylabel("RF")
+    ax.grid()
+    ax.set_title(study.name)
+    lines = []
+
+    for job in study.jobList:
+        os.chdir(job.resDir)
+
+        mergedPdf.append("{}.pdf".format(job.name))
+        mergedPdf.addBookmark(job.name, len(mergedPdf.pages) - 1)
+
+        xData = -np.loadtxt("U.csv")[:, 1]
+        yData = -np.loadtxt("RF.csv")[:, 1]
+
+        # if len(lines):
+        #    lines[-1].set_alpha(0.0)  # alpha = 0.0 hides the previously drawn line
+        #    lines[-1].set_color("gray")
+
+        lines.extend(ax.plot(xData, yData, label=job.name))
+
+    os.chdir(study.resDir)
+    fig.savefig("plot.pdf")
+
+    mergedPdf.write("{}.pdf".format(studyName))
+
+
+paramDict = {
+    "_PINI_": [10, 20],
+    "_GC2G_": [0.1, 0.2],
+}
 
 config = {
     "parameterStudies": {
@@ -139,17 +159,17 @@ config = {
             "type": "EdelweissFE",
             "edelweissConfig": {
                 "executable": "/home/paul/projects/EdelweissFE/edelweiss.py",
-                "inputFile": "triaxTemplate.inp",
+                "inputFile": "inputfiles/triaxTemplate.inp",
                 "numThreads": 1,
             },
             "resDir": studyName,
             "replaceInstructions": {
-                "triaxTemplate.inp": paramDict,
+                "inputfiles/triaxTemplate.inp": paramDict,
                 # add replace instructions here
             },
             "postProcessingInstructions": {
                 "afterJob": generatePdfPage,
-                "afterStudy": None,
+                "afterStudy": generateOverview,
             },
             "active": True,
         },
