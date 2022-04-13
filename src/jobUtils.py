@@ -21,7 +21,7 @@ class Study:
         self.shareDir = os.path.join(os.path.abspath(head), "share")
 
         self.type = studyDict.get("type")
-        self.edelweissConfig = studyDict.get("edelweissConfig")
+        self.simConfig = studyDict["simConfig"]
 
         self.replaceInstructions = studyDict.get("replaceInstructions")
 
@@ -63,7 +63,7 @@ class Study:
             )
 
         if self.type == "EdelweissFE":
-            inputFile = self.edelweissConfig["inputFile"]
+            inputFile = self.simConfig["inputFile"]
             if not os.path.basename(inputFile) in map(
                 os.path.basename, self.replaceInstructions.keys()
             ):
@@ -171,16 +171,16 @@ class Job:
 
         if self.type == "EdelweissFE":
             inputFile = os.path.join(
-                self.inpDir, os.path.basename(self.study.edelweissConfig["inputFile"])
+                self.inpDir, os.path.basename(self.study.simConfig["inputFile"])
             )
             envVars = dict(os.environ)
-            if self.study.edelweissConfig["numThreads"]:
+            if self.study.simConfig["numThreads"]:
                 envVars.update(
-                    {"OMP_NUM_THREADS": str(self.study.edelweissConfig["numThreads"])}
+                    {"OMP_NUM_THREADS": str(self.study.simConfig["numThreads"])}
                 )
             args = [
                 "python",
-                self.study.edelweissConfig["executable"],
+                self.study.simConfig["executable"],
                 inputFile,
                 "--noplot",
             ]

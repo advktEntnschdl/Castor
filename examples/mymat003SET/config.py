@@ -157,7 +157,7 @@ config = {
         studyName: {
             "name": studyName,
             "type": "EdelweissFE",
-            "edelweissConfig": {
+            "simConfig": {
                 "executable": "/home/paul/projects/EdelweissFE/edelweiss.py",
                 "inputFile": "inputfiles/triaxTemplate.inp",
                 "numThreads": 1,
