@@ -40,7 +40,6 @@ paramDict = {
 
 
 def generatePdfPage(job):
-    print("Nice Job " + job.name + "!")
     fig, ax = plt.subplots()
     fig.set_size_inches(paper[0], paper[1])
     ax.set_xlabel("U")
@@ -51,14 +50,14 @@ def generatePdfPage(job):
     cwd = os.getcwd()
     os.chdir(job.resDir)
 
-    resU = -np.loadtxt("U.csv")[:, 1]
-    resRF = -np.loadtxt("RF.csv")[:, 1]
+    xData = -np.loadtxt("U.csv")[:, 1]
+    yData = -np.loadtxt("RF.csv")[:, 1]
 
     if len(lines):
         lines[-1].set_alpha(0.0)  # alpha = 0.0 hides the previously drawn line
         lines[-1].set_color("gray")
 
-    lines.extend(ax.plot(resU, resRF))
+    lines.extend(ax.plot(xData, yData))
 
     ax.set_title(job.name)
     fig.savefig("plot.pdf")
