@@ -10,8 +10,6 @@ import PyPDF4
 
 matplotlib.style.use("seaborn-colorblind")
 
-import PyPDF4
-
 
 def makeJobPlot(job):
     os.chdir(job.resDir)
