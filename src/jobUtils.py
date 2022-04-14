@@ -80,9 +80,9 @@ class Study:
         os.chdir(self.resDir)
 
         runJob = operator.methodcaller("run")
-        if args.parallel:
+        if args.parallelJobs[0] > 1:
             nJobs = len(self.jobList)
-            with ProcessPoolExecutor(max_workers=nJobs) as executor:
+            with ProcessPoolExecutor(max_workers=args.parallelJobs[0]) as executor:
                 futures = list(
                     map(lambda job: executor.submit(runJob, job), self.jobList)
                 )
