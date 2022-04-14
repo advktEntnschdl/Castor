@@ -200,18 +200,20 @@ class Job:
             ]
 
         cmd = " ".join(args)
-        with open("outStream.txt", "w+") as f:
-            subproc = subprocess.Popen(cmd, stdout=f, stderr=f, env=envVars, shell=True)
+        with open("stderr.txt", "w+") as fErr, open("stdout.txt", "w+") as fOut:
+            subproc = subprocess.Popen(
+                cmd, stdout=fOut, stderr=fErr, env=envVars, shell=True
+            )
 
             while subproc.poll() == None:
                 time.sleep(0.1)
 
         if subproc.poll() == 0:
             self.performPostProcessing()
+            message(" Job finished: " + self.name)
         else:
             message(" Job execution exited with an error: " + self.name)
 
-        message(" Job finished: " + self.name)
         os.chdir(self.study.resDir)
 
         return self
