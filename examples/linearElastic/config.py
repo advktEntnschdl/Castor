@@ -73,7 +73,8 @@ studyName += datetime.now().strftime("%Y%m%dT%H%M")
 inputTemplate = "input.inp"
 
 paramDict = {
-    "_Nu_": np.linspace(0.1, 0.49, 6),
+    "_E_": [190000, 200000, 210000],
+    "_Nu_": [0.2, 0.3, 0.4],
 }
 
 config = {
