@@ -1,6 +1,6 @@
 *material, name=LinearElastic,       id=mat
 **  E,      nu
-    210000, _Nu_
+    _E_,    _Nu_
 
 *job, name=job, domain=3d, solver=NISTParallel
 
