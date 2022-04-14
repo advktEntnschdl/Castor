@@ -1,3 +1,4 @@
+from rich.pretty import pprint
 from rich import print
 
 
@@ -11,18 +12,18 @@ def printHeader():
     printSepline()
 
 
-def errorMessage(*args, **kwargs):
+def errorMessage(*args):
 
-    message(args, style="bold red", **kwargs)
+    message(*(" ERROR:", *args))
 
 
-def message(*args, **kwargs):
+def message(*args):
 
-    string = args[0]
+    string = str(args[0])
     for arg in args[1:]:
-        string = " ".join((string, arg))
+        string += " " + str(arg)
 
-    print("|{:<70s}|".format(string), **kwargs)
+    print("|{:<70s}|".format(string))
 
 
 def printSepline():

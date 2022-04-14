@@ -7,7 +7,7 @@ import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import inspect
 
-from .journal import message
+from .journal import message, errorMessage
 
 
 class Study:
@@ -210,9 +210,10 @@ class Job:
 
         if subproc.poll() == 0:
             self.performPostProcessing()
-            message(" Job finished: " + self.name)
+            message(" Job finished:", self.name)
         else:
-            message(" Job execution exited with an error: " + self.name)
+            errorMessage("Job execution exited with an error:", self.name)
+            message("  --> see stderr.txt or stdout.txt for more information")
 
         os.chdir(self.study.resDir)
 
