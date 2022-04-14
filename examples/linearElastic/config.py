@@ -1,0 +1,103 @@
+import os
+from datetime import datetime
+import numpy as np
+from datetime import datetime
+
+import matplotlib
+import matplotlib.style
+from matplotlib import pyplot as plt
+import PyPDF4
+
+matplotlib.style.use("seaborn-colorblind")
+
+import PyPDF4
+
+
+def makeJobPlot(job):
+    os.chdir(job.resDir)
+
+    fig, ax = plt.subplots()
+    ax.set_xlabel("U")
+    ax.set_ylabel("RF")
+    ax.grid()
+    lines = []
+
+    xData = np.loadtxt("U.csv")[:, 1]
+    yData = np.loadtxt("RF.csv")[:, 1]
+
+    lines.extend(ax.plot(xData, yData))
+
+    ax.set_title(job.name)
+    fig.savefig(os.path.join(job.resDir, job.name + ".pdf"))
+
+
+def makeStudyPlot(study):
+    os.chdir(study.resDir)
+
+    fig, ax = plt.subplots()
+    ax.set_xlabel("U")
+    ax.set_ylabel("RF")
+    ax.grid()
+    ax.set_title(study.name)
+    contourList = []
+    lines = []
+
+    for job in study.jobList:
+        xData = np.loadtxt(os.path.join(job.resDir, "U.csv"))[:, 1]
+        yData = np.loadtxt(os.path.join(job.resDir, "RF.csv"))[:, 1]
+
+        lines.extend(ax.plot(xData, yData, label=job.name))
+        contourList.append(os.path.join(job.resDir, "contour.png"))
+
+    ax.legend()
+    fig.savefig("plot.pdf")
+
+
+def mergePDFs(study):
+    mergedPdf = PyPDF4.PdfFileMerger()
+
+    mergedPdf.append(os.path.join(study.resDir, "plot.pdf"))
+    mergedPdf.addBookmark(study.name, len(mergedPdf.pages) - 1)
+
+    for job in study.jobList:
+        mergedPdf.append(os.path.join(job.resDir, "{}.pdf".format(job.name)))
+        mergedPdf.addBookmark(job.name, len(mergedPdf.pages) - 1)
+
+    mergedPdf.write("{}.pdf".format(studyName))
+    os.remove(os.path.join(study.resDir, "plot.pdf"))
+    return
+
+
+studyName = "_tensileTest"
+studyName += "_"
+studyName += datetime.now().strftime("%Y%m%dT%H%M")
+
+inputTemplate = "input.inp"
+
+paramDict = {
+    "_Nu_": np.linspace(0.1, 0.49, 6),
+}
+
+config = {
+    "parameterStudies": {
+        studyName: {
+            "name": studyName,
+            "type": "EdelweissFE",
+            "simConfig": {
+                "executable": "~/projects/EdelweissFE/edelweiss.py",
+                "inputFile": inputTemplate,
+                "numThreads": 1,
+            },
+            "resDir": studyName,
+            "replaceInstructions": {
+                inputTemplate: paramDict,
+                # add replace instructions here
+            },
+            "postProcessingInstructions": {
+                "afterJob": makeJobPlot,
+                "afterStudy": [makeStudyPlot, mergePDFs],
+            },
+            "active": True,
+        },
+    },
+}
