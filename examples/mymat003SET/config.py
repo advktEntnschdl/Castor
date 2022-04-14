@@ -227,13 +227,13 @@ config = {
             "name": studyName,
             "type": "EdelweissFE",
             "simConfig": {
-                "executable": "/home/paul/projects/EdelweissFE/edelweiss.py",
-                "inputFile": "inputfiles/triaxTemplate.inp",
+                "executable": "~/projects/EdelweissFE/edelweiss.py",
+                "inputFile": "triaxTemplate.inp",
                 "numThreads": 1,
             },
             "resDir": studyName,
             "replaceInstructions": {
-                "inputfiles/triaxTemplate.inp": paramDict,
+                "triaxTemplate.inp": paramDict,
                 # add replace instructions here
             },
             "postProcessingInstructions": {

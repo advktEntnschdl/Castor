@@ -88,12 +88,9 @@ class Study:
                 )
 
                 for future in as_completed(futures):
-                    job = future.result()
-                    message(" Job finished: " + job.name)
                     pass
         else:
             for result in map(runJob, self.jobList):
-                message(" Job finished: " + self.name)
                 pass
 
         self.performPostProcessing()
@@ -172,11 +169,12 @@ class Job:
 
         os.chdir(self.resDir)
 
+        envVars = dict(os.environ)
+        args = []
         if self.type == "EdelweissFE":
             inputFile = os.path.join(
                 self.inpDir, os.path.basename(self.study.simConfig["inputFile"])
             )
-            envVars = dict(os.environ)
             if self.study.simConfig["numThreads"]:
                 envVars.update(
                     {"OMP_NUM_THREADS": str(self.study.simConfig["numThreads"])}
@@ -187,10 +185,6 @@ class Job:
                 inputFile,
                 "--noplot",
             ]
-            with open("outStream.txt", "w+") as f:
-                subprocess.run(args, stdout=f, stderr=f, env=envVars)
-            while not any(".csv" in fn for fn in os.listdir(self.resDir)):
-                time.sleep(0.1)
 
         elif self.type == "mpFEM":
 
@@ -204,14 +198,21 @@ class Job:
                 "-r=" + self.study.simConfig["output"],
                 "-o=result",
             ]
-            command = " ".join(args)
-            with open("outStream.txt", "w+") as f:
-                subproc = subprocess.Popen(command, stdout=f, stderr=f, shell=True)
 
-                while subproc.poll() == None:
-                    time.sleep(0.1)
+        cmd = " ".join(args)
+        with open("stderr.txt", "w+") as fErr, open("stdout.txt", "w+") as fOut:
+            subproc = subprocess.Popen(
+                cmd, stdout=fOut, stderr=fErr, env=envVars, shell=True
+            )
 
-        self.performPostProcessing()
+            while subproc.poll() == None:
+                time.sleep(0.1)
+
+        if subproc.poll() == 0:
+            self.performPostProcessing()
+            message(" Job finished: " + self.name)
+        else:
+            message(" Job execution exited with an error: " + self.name)
 
         os.chdir(self.study.resDir)
 
