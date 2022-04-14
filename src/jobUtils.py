@@ -159,16 +159,10 @@ class Job:
 
     def generateInputFromTemplates(self):
 
-        if self.type == "mpFEM":
-            shutil.copytree(self.study.inpDir, self.inpDir)
-
-        for templateFile, replaceDict in self.replaceDef:
-            templateFile = os.path.basename(templateFile)
-            fileFromTemplateFile(
-                os.path.join(self.inpDir, templateFile),
-                os.path.join(self.study.inpDir, templateFile),
-                replaceDict,
-            )
+        shutil.copytree(self.study.inpDir, self.inpDir)
+        for file, replaceDict in self.replaceDef:
+            filePath = os.path.join(self.inpDir, os.path.basename(file))
+            replaceInFile(filePath, replaceDict)
         return
 
     def run(self):
@@ -179,7 +173,6 @@ class Job:
         os.chdir(self.resDir)
 
         if self.type == "EdelweissFE":
-            os.mkdir(self.inpDir)
             inputFile = os.path.join(
                 self.inpDir, os.path.basename(self.study.simConfig["inputFile"])
             )
@@ -225,17 +218,16 @@ class Job:
         return self
 
 
-def fileFromTemplateFile(filename, templatefilename, replacedict):
-    templatefile = open(templatefilename, "r")
-    file = open(filename, "w+")
+def replaceInFile(filename, replacedict):
 
-    for line in templatefile:
+    content = ""
+    with open(filename, "r") as file:
+        content = file.read()
         for param in replacedict:
-            line = line.replace(param, str(replacedict[param]))
-        file.write(line)
+            content = content.replace(param, str(replacedict[param]))
 
-    templatefile.close()
-    file.close()
+    with open(filename, "w") as file:
+        file.write(content)
 
     return
 
