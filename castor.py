@@ -42,3 +42,5 @@ if __name__ == "__main__":
                 os.chdir(upmostDir)
             else:
                 message("  -->  " + studyName + "(inactive)")
+
+    printSepline()
