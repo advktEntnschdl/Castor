@@ -17,7 +17,7 @@ if __name__ == "__main__":
         type=str,
         nargs=1,
     )
-    parser.add_argument("--parallelJobs", type=int, default=1, nargs=1)
+    parser.add_argument("--parallelJobs", type=int, default=[1], nargs=1)
 
     args = parser.parse_args()
     printHeader()
