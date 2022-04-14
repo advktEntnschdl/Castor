@@ -42,7 +42,7 @@ class Study:
         return
 
     def checkInput(self, studyDict):
-        possibleTypes = ["EdelweissFE"]
+        possibleTypes = ["EdelweissFE", "mpFEM"]
 
         if studyDict["type"] not in possibleTypes:
             raise ValueError(
@@ -55,14 +55,15 @@ class Study:
 
     def run(self, args):
         os.mkdir(self.resDir)
-        os.mkdir(self.inpDir)
-
-        for templateFile in self.replaceInstructions:
-            shutil.copy(
-                templateFile, os.path.join(self.inpDir, os.path.basename(templateFile))
-            )
 
         if self.type == "EdelweissFE":
+            
+            os.mkdir(self.inpDir)
+            for templateFile in self.replaceInstructions:
+                shutil.copy(
+                templateFile, os.path.join(self.inpDir, os.path.basename(templateFile))
+                )
+
             inputFile = self.simConfig["inputFile"]
             if not os.path.basename(inputFile) in map(
                 os.path.basename, self.replaceInstructions.keys()
@@ -71,6 +72,10 @@ class Study:
                     inputFile, os.path.join(self.inpDir, os.path.basename(inputFile))
                 )
 
+        elif self.type == "mpFEM":
+            inputFolder = self.simConfig["input"]
+            shutil.copytree( inputFolder, self.inpDir )
+        
         os.chdir(self.resDir)
 
         runJob = operator.methodcaller("run")
@@ -152,6 +157,10 @@ class Job:
         return
 
     def generateInputFromTemplates(self):
+        
+        if self.type == "mpFEM":
+            shutil.copytree( self.study.inpDir, self.inpDir )
+
         for templateFile, replaceDict in self.replaceDef:
             templateFile = os.path.basename(templateFile)
             fileFromTemplateFile(
@@ -164,12 +173,12 @@ class Job:
     def run(self):
         message(" Job started: " + self.name)
         os.mkdir(self.resDir)
-        os.mkdir(self.inpDir)
         self.generateInputFromTemplates()
 
         os.chdir(self.resDir)
 
         if self.type == "EdelweissFE":
+            os.mkdir(self.inpDir)
             inputFile = os.path.join(
                 self.inpDir, os.path.basename(self.study.simConfig["inputFile"])
             )
@@ -188,7 +197,25 @@ class Job:
                 subprocess.run(args, stdout=f, stderr=f, env=envVars)
             while not any(".csv" in fn for fn in os.listdir(self.resDir)):
                 time.sleep(0.1)
+        
+        elif self.type == "mpFEM":
+            
+            os.mkdir( self.study.simConfig["output"] )
 
+            args = [self.study.simConfig["executable"],
+                    "--allow_nan",
+                    "-i="+ self.inpDir, 
+                    "-f=files",
+                    "-r="+self.study.simConfig["output"], 
+                    "-o=result"
+                    ]
+            command = ' '.join( args ) 
+            with open("outStream.txt", "w+") as f:
+                subproc = subprocess.Popen(command, stdout=f, stderr=f, shell=True )
+
+                while subproc.poll() == None:
+                    time.sleep(0.1)
+                    
         self.performPostProcessing()
 
         os.chdir(self.study.resDir)
