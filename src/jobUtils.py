@@ -54,6 +54,17 @@ class Study:
         return
 
     def run(self, args):
+        if os.path.exists(self.resDir):
+            if args.overwrite:
+                message("Overwriting directory {}".format(self.resDir))
+                shutil.rmtree(self.resDir)
+            else:
+                message(
+                    "Directory {} exists. Use --overwrite keyword if you want to overwrite it.".format(
+                        self.resDir
+                    )
+                )
+
         os.mkdir(self.resDir)
 
         if self.type == "EdelweissFE":
@@ -163,7 +174,7 @@ class Job:
         return
 
     def run(self):
-        message(" Job started: " + self.name)
+        message("Job started: " + self.name)
         os.mkdir(self.resDir)
         self.generateInputFromTemplates()
 
@@ -210,10 +221,10 @@ class Job:
 
         if subproc.poll() == 0:
             self.performPostProcessing()
-            message(" Job finished:", self.name)
+            message("Job finished:", self.name)
         else:
             errorMessage("Job execution exited with an error:", self.name)
-            message("  --> see stderr.txt or stdout.txt for more information")
+            message(" --> see stderr.txt or stdout.txt for more information")
 
         os.chdir(self.study.resDir)
 

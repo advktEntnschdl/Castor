@@ -18,11 +18,12 @@ if __name__ == "__main__":
         nargs=1,
     )
     parser.add_argument("--parallelJobs", type=int, default=[1], nargs=1)
+    parser.add_argument("--overwrite", default=False, action="store_true")
 
     args = parser.parse_args()
     printHeader()
 
-    message(" reading config from {:}... ".format(args.file[0]))
+    message("reading config from {:}... ".format(args.file[0]))
     config = readConfig(args.file[0])
 
     printSepline()
@@ -32,10 +33,10 @@ if __name__ == "__main__":
         for studyName, studyDict in config["parameterStudies"].items():
             study = Study(studyDict)
             if study.active:
-                message(" " + study.name + " (active) ")
+                message(study.name + " (active) ")
                 study.run(args)
                 os.chdir(upmostDir)
             else:
-                message("  -->  " + studyName + "(inactive)")
+                message(" -->  " + studyName + "(inactive)")
 
     printSepline()
