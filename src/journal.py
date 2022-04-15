@@ -1,34 +1,52 @@
 from rich.pretty import pprint
 from rich import print
+from textwrap import wrap
+
+maxCharCentered = 70
+maxCharJustified = 68
 
 
 def printHeader():
     printSepline()
-    print("|{:^70s}|".format("CASTOR"))
-    print("|{:^70s}|".format(""))
-    print("|{:^70s}|".format("-- MaterialModelingToolbox --"))
-    print("|{:^70s}|".format("github.com/MAteRialMOdelingToolbox"))
-    print("|{:^70s}|".format(""))
+    printCenteredLine("CASTOR")
+    printCenteredLine("")
+    printCenteredLine("-- MaterialModelingToolbox --")
+    printCenteredLine("github.com/MAteRialMOdelingToolbox")
+    printCenteredLine("")
     printSepline()
 
 
 def errorMessage(*args):
-
-    message(*(" ERROR:", *args))
+    message(*("ERROR:", *args))
 
 
 def message(*args):
-
-    string = str(args[0])
-    for arg in args[1:]:
-        string += " " + str(arg)
-
-    print("|{:<70s}|".format(string))
+    if args:
+        string = str(args[0])
+        for arg in args[1:]:
+            string += " " + str(arg)
+        if len(string) < maxCharJustified:
+            printJustifiedLine(string)
+        else:
+            stringList = wrap(string, maxCharJustified - 3)
+            printJustifiedLine(stringList[0])
+            for string in stringList[1:]:
+                printJustifiedLine("..." + string)
+    else:
+        printJustifiedLine(" ")
 
 
 def printSepline():
-    message(70 * "=")
+    printCenteredLine(maxCharCentered * "=")
 
 
 def printLine():
-    message(70 * "-")
+    printCenteredLine(maxCharCentered * "-")
+
+
+def printCenteredLine(string):
+    print("|{:^{}s}|".format(string, maxCharCentered))
+
+
+def printJustifiedLine(string):
+    print("| {:<{}s} |".format(string, maxCharJustified))
