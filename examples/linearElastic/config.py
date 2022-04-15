@@ -61,7 +61,7 @@ def mergePDFs(study):
         mergedPdf.append(os.path.join(job.resDir, "{}.pdf".format(job.name)))
         mergedPdf.addBookmark(job.name, len(mergedPdf.pages) - 1)
 
-    mergedPdf.write("{}.pdf".format(studyName))
+    mergedPdf.write("{}.pdf".format(study.name))
     os.remove(os.path.join(study.resDir, "plot.pdf"))
     return
 
