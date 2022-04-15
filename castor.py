@@ -3,7 +3,7 @@ import os
 
 from src.reader import readConfig
 from src.journal import *
-from src.jobUtils import *
+from src.study import *
 
 if __name__ == "__main__":
 
@@ -12,11 +12,7 @@ if __name__ == "__main__":
         description="A tool for running parameter studies",
     )
 
-    parser.add_argument(
-        "file",
-        type=str,
-        nargs=1,
-    )
+    parser.add_argument("file", type=str, nargs=1)
     parser.add_argument("--parallelJobs", type=int, default=[1], nargs=1)
     parser.add_argument("--overwrite", default=False, action="store_true")
 
