@@ -5,6 +5,6 @@ linting:
   stage: linting
   image: registry.gitlab.com/mafda/python-linting
   script:
-    - isort src castor.py --check-only
     - black --check src castor.py
+    - isort src castor.py --check-only
     - flake8 src castor.py --ignore E501
