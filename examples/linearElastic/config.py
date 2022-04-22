@@ -92,6 +92,9 @@ config = {
                 inputTemplate: paramDict,
                 # add replace instructions here
             },
+            "preProcessingInstructions": {
+                # "beforeStudy":
+            },
             "postProcessingInstructions": {
                 "afterJob": makeJobPlot,
                 "afterStudy": [makeStudyPlot, mergePDFs],

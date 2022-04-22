@@ -67,6 +67,9 @@ config = {
                 "templateFile1.inc": paramDict1,
                 "templateFile2.inc": paramDict2,
             },
+            "preProcessingInstructions": {
+                # "beforeStudy":
+            },
             "postProcessingInstructions": {
                 "afterJob": generatePdfPage,
                 "afterStudy": processStudy,

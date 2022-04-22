@@ -16,7 +16,7 @@ class Job:
         self.type = study.type
         self.study = study
 
-        ppFuns = study.ppInstructions.get("afterJob")
+        ppFuns = study.postProcessingInstructions.get("afterJob")
         if ppFuns:
             if type(ppFuns) == list:
                 self.ppFunList = ppFuns
@@ -83,11 +83,15 @@ class Job:
             subproc = subprocess.Popen(
                 cmd, stdout=fOut, stderr=fErr, env=envVars, shell=True
             )
+            try:
+                while subproc.poll() == None:
+                    time.sleep(0.1)
+            except KeyboardInterrupt:
+                subproc.kill()
 
-            while subproc.poll() == None:
-                time.sleep(0.1)
+        message("INFO: Simulation exited with code ", subproc.poll())
 
-        if subproc.poll() == 0:
+        if subproc.poll() >= 0:
             self.performPostProcessing()
             message("Job finished:", self.name)
         else:

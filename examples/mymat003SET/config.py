@@ -236,6 +236,9 @@ config = {
                 "triaxTemplate.inp": paramDict,
                 # add replace instructions here
             },
+            "preProcessingInstructions": {
+                # "beforeStudy":
+            },
             "postProcessingInstructions": {
                 "afterJob": generateJobPage,
                 "afterStudy": [generateStudyPage, mergePDFs],

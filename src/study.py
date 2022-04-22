@@ -26,8 +26,20 @@ class Study:
 
         self.replaceInstructions = studyDict.get("replaceInstructions")
 
-        self.ppInstructions = studyDict["postProcessingInstructions"]
-        ppFuns = self.ppInstructions.get("afterStudy")
+        self.preProcessingInstructions = studyDict["preProcessingInstructions"]
+        prepFuns = self.preProcessingInstructions.get("beforeStudy")
+
+        if prepFuns:
+            if type(prepFuns) == list:
+                self.prepFunList = prepFuns
+            else:
+                self.prepFunList = [prepFuns]
+        else:
+            self.prepFunList = []
+
+        self.postProcessingInstructions = studyDict["postProcessingInstructions"]
+        ppFuns = self.postProcessingInstructions.get("afterStudy")
+
         if ppFuns:
             if type(ppFuns) == list:
                 self.ppFunList = ppFuns
@@ -92,6 +104,8 @@ class Study:
 
         os.chdir(self.resDir)
 
+        self.performPreProcessing()
+
         runJob = operator.methodcaller("run")
         if args.parallelJobs[0] > 1:
             nJobs = len(self.jobList)
@@ -109,6 +123,10 @@ class Study:
         self.performPostProcessing()
 
         return
+
+    def performPreProcessing(self):
+        for ppFun in self.prepFunList:
+            ppFun(self)
 
     def performPostProcessing(self):
         for ppFun in self.ppFunList:
