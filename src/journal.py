@@ -1,5 +1,6 @@
-from rich import print
 from textwrap import wrap
+
+from rich import print
 
 maxCharCentered = 70
 maxCharJustified = 68

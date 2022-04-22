@@ -1,10 +1,10 @@
 import itertools
 import os
-import time
-import subprocess
 import shutil
+import subprocess
+import time
 
-from .journal import message, errorMessage
+from .journal import errorMessage, message
 
 
 class Job:

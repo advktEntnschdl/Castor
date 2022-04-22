@@ -1,13 +1,13 @@
+import inspect
 import itertools
 import operator
 import os
+import pickle
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
-import inspect
-import pickle
 
-from .journal import message
 from .job import Job, getReplaceDictList
+from .journal import message
 
 
 class Study:
