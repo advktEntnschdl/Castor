@@ -7,4 +7,3 @@ linting:
   script:
     - black --check src
     - flake8 src --ignore E501
-    - find src -type f -name "*.py" | xargs pylint
