@@ -5,7 +5,6 @@ linting:
   stage: linting
   image: registry.gitlab.com/mafda/python-linting
   script:
-    - isort src --check-only
     - black --check src
     - flake8 src
     - find src -type f -name "*.py" | xargs pylint
