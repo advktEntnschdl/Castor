@@ -1,9 +1,9 @@
 import argparse
 import os
 
+from src.journal import message, printHeader, printSepline
 from src.reader import readConfig
-from src.journal import *
-from src.study import *
+from src.study import Study
 
 if __name__ == "__main__":
 
