@@ -1,10 +1,17 @@
 stages:
-  - linting
+  - linting-black
+  - linting-sort-flake8
 
-linting:
-  stage: linting
-  image: registry.gitlab.com/mafda/python-linting
+linting-black:
+  stage: linting-black
+  image: gitlab.com/milansuk/python-black:latest
   script:
     - black --check src castor.py
+
+
+linting-sort-flake8:
+  stage: linting-sort-flake8
+  image: gitlab.com/milansuk/python-black:latest
+  script:
     - isort src castor.py --check-only
     - flake8 src castor.py --ignore E501
