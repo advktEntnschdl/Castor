@@ -1,18 +1,13 @@
 stages:
-  - linting-black
-  - linting-sort-flake8
+  - linting
 
-linting-black:
-  stage: linting-black
+linting:
+  stage: linting
   image: continuumio/miniconda3:latest
   script:
     - pip install git+https://github.com/psf/black
+    - pip install isort
+    - pip install flake8
     - black --check src castor.py
-
-
-linting-sort-flake8:
-  stage: linting-sort-flake8
-  image: registry.gitlab.com/mafda/python-linting
-  script:
     - isort src castor.py --check-only
     - flake8 src castor.py --ignore E501
