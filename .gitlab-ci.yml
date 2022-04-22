@@ -4,8 +4,9 @@ stages:
 
 linting-black:
   stage: linting-black
-  image: github.com/psf/black:latest
+  image: continuumio/miniconda3:latest
   script:
+    - conda install black
     - black --check src castor.py
 
 
