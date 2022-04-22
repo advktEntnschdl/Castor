@@ -6,5 +6,5 @@ linting:
   image: registry.gitlab.com/mafda/python-linting
   script:
     - black --check src
-    - flake8 src
+    - flake8 src --ignore E501
     - find src -type f -name "*.py" | xargs pylint
