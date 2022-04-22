@@ -4,7 +4,7 @@ stages:
 
 linting-black:
   stage: linting-black
-  image: gitlab.com/milansuk/python-black:latest
+  image: github.com/psf/black:latest
   script:
     - black --check src castor.py
 
