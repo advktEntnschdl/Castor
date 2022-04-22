@@ -1,4 +1,3 @@
-from rich.pretty import pprint
 from rich import print
 from textwrap import wrap
 

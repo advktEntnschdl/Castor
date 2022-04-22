@@ -1,14 +1,13 @@
 import itertools
 import operator
 import os
-from posixpath import relpath
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import inspect
 import pickle
 
-from .journal import message, errorMessage
-from .job import *
+from .journal import message
+from .job import Job, getReplaceDictList
 
 
 class Study:
@@ -48,7 +47,7 @@ class Study:
         else:
             self.ppFunList = []
 
-        self.active = studyDict.get("active") == True
+        self.active = studyDict.get("active") if self.StudyDict.get("active") else True
 
         self.generateJobListFromConfig()
 
@@ -108,7 +107,6 @@ class Study:
 
         runJob = operator.methodcaller("run")
         if args.parallelJobs[0] > 1:
-            nJobs = len(self.jobList)
             with ProcessPoolExecutor(max_workers=args.parallelJobs[0]) as executor:
                 futures = list(
                     map(lambda job: executor.submit(runJob, job), self.jobList)

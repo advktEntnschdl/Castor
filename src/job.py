@@ -84,7 +84,7 @@ class Job:
                 cmd, stdout=fOut, stderr=fErr, env=envVars, shell=True
             )
             try:
-                while subproc.poll() == None:
+                while subproc.poll() is None:
                     time.sleep(0.1)
             except KeyboardInterrupt:
                 subproc.kill()
