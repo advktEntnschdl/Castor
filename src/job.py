@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import time
 
-from .journal import errorMessage, message
+from .journal import errorMessage, infoMessage, message
 
 
 class Job:
@@ -42,7 +42,7 @@ class Job:
         return
 
     def run(self):
-        message("Job started: " + self.name)
+        message('Job "{}" started'.format(self.name))
         os.mkdir(self.resDir)
         self.generateInputFromTemplates()
 
@@ -89,11 +89,15 @@ class Job:
             except KeyboardInterrupt:
                 subproc.kill()
 
-        message("INFO: Simulation exited with code ", subproc.poll())
+        infoMessage(
+            'Simulation for job "{}" exited with code {}'.format(
+                self.name, subproc.poll()
+            )
+        )
 
         if subproc.poll() >= 0:
             self.performPostProcessing()
-            message("Job finished:", self.name)
+            message('Job "{}" finished'.format(self.name))
         else:
             errorMessage("Job execution exited with an error:", self.name)
             message(" --> see stderr.txt or stdout.txt for more information")
