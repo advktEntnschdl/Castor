@@ -16,6 +16,10 @@ def printHeader():
     printSepline()
 
 
+def infoMessage(*args):
+    message(*("INFO:", *args))
+
+
 def errorMessage(*args):
     message(*("ERROR:", *args))
 
