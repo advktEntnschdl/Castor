@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from src.journal import message, printHeader, printSepline
+from src.journal import infoMessage, message, printHeader, printSepline
 from src.reader import readConfig
 from src.study import Study
 
@@ -34,5 +34,9 @@ if __name__ == "__main__":
                 os.chdir(upmostDir)
             else:
                 message(" -->  " + studyName + "(inactive)")
+    else:
+        infoMessage(
+            'Use field "parameterStudies" in config dictionary to define a study.'
+        )
 
     printSepline()
