@@ -58,12 +58,14 @@ class Study:
     def checkFields(self, studyDict):
         raiseError = False
 
-        neccessaryFields = ["name", "type", "resDir", "replaceInstructions"]
-        # optionalFields = [
-        #    "preProcessingInstructions",
-        #    "postProcessingInstructions",
-        #    "active",
-        # ]
+        neccessaryFields = [
+            "name",
+            "type",
+            "resDir",
+            "replaceInstructions",
+            "preProcessingInstructions",
+            "postProcessingInstructions",
+        ]
 
         for field in neccessaryFields:
             if field not in studyDict:
