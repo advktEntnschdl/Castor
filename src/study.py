@@ -47,7 +47,7 @@ class Study:
         else:
             self.ppFunList = []
 
-        self.active = studyDict.get("active") if self.StudyDict.get("active") else True
+        self.active = studyDict.get("active") if studyDict.get("active") else True
 
         self.generateJobListFromConfig()
 
