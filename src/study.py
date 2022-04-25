@@ -5,14 +5,16 @@ import os
 import pickle
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from difflib import get_close_matches
 
 from .job import Job, getReplaceDictList
-from .journal import message
+from .journal import errorMessage, infoMessage, message
 
 
 class Study:
     def __init__(self, studyDict):
-        self.checkInput(studyDict)
+        self.checkFields(studyDict)
+        self.checkValues(studyDict)
 
         self.name = studyDict.get("name")
         self.resDir = os.path.abspath(studyDict.get("resDir"))
@@ -53,17 +55,68 @@ class Study:
 
         return
 
-    def checkInput(self, studyDict):
-        possibleTypes = ["EdelweissFE", "mpFEM"]
+    def checkFields(self, studyDict):
+        raiseError = False
 
-        if studyDict["type"] not in possibleTypes:
-            raise ValueError(
-                "Type '{}' not a valid study type. Valid study types: {}".format(
-                    self.type, ", ".join(map(lambda x: "'{}'".format(x), possibleTypes))
-                ),
-            )
+        neccessaryFields = ["name", "type", "resDir", "replaceInstructions"]
+        # optionalFields = [
+        #    "preProcessingInstructions",
+        #    "postProcessingInstructions",
+        #    "active",
+        # ]
+
+        for field in neccessaryFields:
+            if field not in studyDict:
+                errorMessage(
+                    'Field "{}" of config dictionary must be set.'.format(field)
+                )
+                matchingKeys = get_close_matches(field, studyDict.keys(), cutoff=0.6)
+                if matchingKeys:
+                    infoMessage(
+                        'You specified "{}". Did you mean "{}"?'.format(
+                            matchingKeys[0], field
+                        )
+                    )
+                raiseError = True
+
+        if raiseError:
+            raise ValueError
 
         return
+
+    def checkValues(self, studyDict):
+        raiseError = False
+
+        possibleTypes = ["EdelweissFE", "mpFEM"]
+        if studyDict["type"] not in possibleTypes:
+            errorMessage(
+                'Type "{}" not a valid study type. Valid study types: {}'.format(
+                    studyDict["type"],
+                    ", ".join(map(lambda x: '"{}"'.format(x), possibleTypes)),
+                )
+            )
+            raiseError = True
+
+        if (
+            not studyDict["replaceInstructions"]
+            or not type(studyDict["replaceInstructions"]) == dict
+        ):
+            errorMessage(
+                'Value of "replaceInstructions" must be a dictionary with at least one key value pair: <fileName>: <parameterDictionary>.'
+            )
+            raiseError = True
+        for key, val in studyDict["replaceInstructions"].items():
+            if not os.path.exists(key):
+                errorMessage("File {} not found.".format(key))
+                raiseError = True
+            if not val or not type(val) == dict:
+                errorMessage(
+                    "Replace instruction must be a dictionary with at least one key value pair: <parameter>: <value or valueList>."
+                )
+                raiseError = True
+
+        if raiseError:
+            raise ValueError
 
     def run(self, args):
         if os.path.exists(self.resDir):
