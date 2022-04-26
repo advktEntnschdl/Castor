@@ -26,6 +26,9 @@ class Study:
         self.simConfig = studyDict["simConfig"]
 
         self.replaceInstructions = studyDict.get("replaceInstructions")
+        self.dependentReplaceInstructions = studyDict.get(
+            "dependentReplaceInstructions"
+        )
 
         self.preProcessingInstructions = studyDict["preProcessingInstructions"]
         prepFuns = self.preProcessingInstructions.get("beforeStudy")
@@ -208,6 +211,21 @@ class Study:
                 ]
             )
         replaceDefsPerJob = list(itertools.product(*replaceDefsPerFile))
+
+        for replaceDef in replaceDefsPerJob:
+            for file, replaceDict in replaceDef:
+                print(file)
+                print(replaceDict)
+                if self.dependentReplaceInstructions:
+                    for (
+                        key,
+                        getValueFromReplaceDict,
+                    ) in self.dependentReplaceInstructions.items():
+                        try:
+                            dependentValue = getValueFromReplaceDict(replaceDict)
+                            replaceDict.update({key: dependentValue})
+                        except:
+                            pass
 
         return replaceDefsPerJob
 

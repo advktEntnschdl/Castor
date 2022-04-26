@@ -1,78 +1,116 @@
-# import os
-import numpy as np
-from datetime import datetime
+import os
 
-# ---------------------------------------
-# post processing
-# ---------------------------------------
 import matplotlib
 import matplotlib.style
+import numpy as np
+import PyPDF4
 from matplotlib import pyplot as plt
-from matplotlib import rcParams
-
-paper = (5.875, 4.125)  # size in inches
-# paperA4 = (5.875, 4.125) # size in inches
 
 matplotlib.style.use("seaborn-colorblind")
-rcParams["font.family"] = ["monospace"]
-rcParams["font.monospace"] = ["FreeMono"]
-
-import PyPDF4
-
-mergedPdf = PyPDF4.PdfFileMerger()
-# ---------------------------------------
-
-edelwCmd = "python ~/projects/EdelweissFE/edelweiss.py"
-# edelwCmd = "OMP_NUM_THREADS=12 python ~/projects/EdelweissFE/edelweiss.py"
-pythonCmd = "/usr/bin/python"
-
-studyName = "_SET"
-studyName += "_"
-studyName += datetime.now().strftime("%Y%m%dT%H%M")
-
-templateFile = "triaxTemplate.inp"
-
-paramDict1 = {
-    "_A_": [1, 2, 3, 4],
-    "_B_": [2],
-}
-paramDict2 = {
-    "_C_": [3, 4],
-    "_D_": [4],
-}
 
 
-def generatePdfPage(job):
-    print("Nice Job " + job.name + "!")
+def makeJobPlot(job):
+    os.chdir(job.resDir)
+
+    fig, ax = plt.subplots()
+    ax.set_xlabel("U")
+    ax.set_ylabel("RF")
+    ax.grid()
+    lines = []
+
+    xData = np.loadtxt("U.csv")[:, 1]
+    yData = np.loadtxt("RF.csv")[:, 1]
+
+    lines.extend(ax.plot(xData, yData))
+
+    ax.set_title(job.name)
+    fig.savefig(os.path.join(job.resDir, job.name + ".pdf"))
 
 
-def processStudy(study):
+def makeStudyPlot(study):
+    os.chdir(study.resDir)
+
+    fig, ax = plt.subplots()
+    ax.set_xlabel("U")
+    ax.set_ylabel("RF")
+    ax.grid()
+    ax.set_title(study.name)
+    contourList = []
+    lines = []
+
     for job in study.jobList:
-        print("Nice Job " + job.name + "!")
+        xData = np.loadtxt(os.path.join(job.resDir, "U.csv"))[:, 1]
+        yData = np.loadtxt(os.path.join(job.resDir, "RF.csv"))[:, 1]
 
+        lines.extend(ax.plot(xData, yData, label=job.name))
+        contourList.append(os.path.join(job.resDir, "contour.png"))
+
+    dummyLegend = ax.legend()
+    fig.canvas.draw()
+    nCols = int(
+        ax.get_tightbbox(fig.canvas.get_renderer()).width
+        / dummyLegend.get_frame().get_width()
+    )
+    dummyLegend.remove
+
+    legend = ax.legend(bbox_to_anchor=(0.5, -0.12), loc="upper center", ncol=nCols)
+    fig.savefig("plot.pdf", bbox_extra_artists=(legend,), bbox_inches="tight")
+
+
+def mergePDFs(study):
+    mergedPdf = PyPDF4.PdfFileMerger()
+
+    mergedPdf.append(os.path.join(study.resDir, "plot.pdf"))
+    mergedPdf.addBookmark(study.name, len(mergedPdf.pages) - 1)
+
+    for job in study.jobList:
+        mergedPdf.append(os.path.join(job.resDir, "{}.pdf".format(job.name)))
+        mergedPdf.addBookmark(job.name, len(mergedPdf.pages) - 1)
+
+    mergedPdf.write("{}.pdf".format(study.name))
+    os.remove(os.path.join(study.resDir, "plot.pdf"))
+    return
+
+
+studyName = "_test"
+
+inputTemplate = "input.inp"
+
+paramDict = {
+    "_A_": [1, 2],
+    "_C_": [3, 4],
+}
 
 config = {
     "parameterStudies": {
         studyName: {
             "name": studyName,
             "type": "EdelweissFE",
-            "edelweissConfig": {
+            "simConfig": {
                 "executable": "~/projects/EdelweissFE/edelweiss.py",
-                "inputFile": "",
+                "inputFile": inputTemplate,
                 "numThreads": 1,
             },
             "resDir": studyName,
             "replaceInstructions": {
-                # add replace instructions here:
-                "templateFile1.inc": paramDict1,
-                "templateFile2.inc": paramDict2,
+                "inp1.inc": {
+                    "_A_": [1, 2],
+                },
+                "inp2.inc": {
+                    "_C_": [3, 4],
+                },
+                # add replace instructions here
+            },
+            "dependentReplaceInstructions": {
+                "_B_": lambda x: x["_A_"] + 10,
+                "_D_": lambda x: x["_C_"] + 1000,
             },
             "preProcessingInstructions": {
                 # "beforeStudy":
             },
             "postProcessingInstructions": {
-                "afterJob": generatePdfPage,
-                "afterStudy": processStudy,
+                # "afterJob": makeJobPlot,
+                # "afterStudy": [makeStudyPlot, mergePDFs],
             },
             "active": True,
         },
