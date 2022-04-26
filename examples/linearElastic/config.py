@@ -1,12 +1,11 @@
 import os
 from datetime import datetime
-import numpy as np
-from datetime import datetime
 
 import matplotlib
 import matplotlib.style
-from matplotlib import pyplot as plt
+import numpy as np
 import PyPDF4
+from matplotlib import pyplot as plt
 
 matplotlib.style.use("seaborn-colorblind")
 
@@ -47,8 +46,16 @@ def makeStudyPlot(study):
         lines.extend(ax.plot(xData, yData, label=job.name))
         contourList.append(os.path.join(job.resDir, "contour.png"))
 
-    ax.legend()
-    fig.savefig("plot.pdf")
+    dummyLegend = ax.legend()
+    fig.canvas.draw()
+    nCols = int(
+        ax.get_tightbbox(fig.canvas.get_renderer()).width
+        / dummyLegend.get_frame().get_width()
+    )
+    dummyLegend.remove
+
+    legend = ax.legend(bbox_to_anchor=(0.5, -0.12), loc="upper center", ncol=nCols)
+    fig.savefig("plot.pdf", bbox_extra_artists=(legend,), bbox_inches="tight")
 
 
 def mergePDFs(study):
