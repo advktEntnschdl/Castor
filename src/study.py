@@ -163,6 +163,10 @@ class Study:
 
         self.performPreProcessing()
 
+        del (
+            self.dependentReplaceInstructions
+        )  # magic happens here; without deleting the parallel job execution does not behave as expected; the dependentReplaceInstructions are not needed after generating the jobList
+
         runJob = operator.methodcaller("run")
         if args.parallelJobs[0] > 1:
             with ProcessPoolExecutor(max_workers=args.parallelJobs[0]) as executor:
@@ -214,8 +218,6 @@ class Study:
 
         for replaceDef in replaceDefsPerJob:
             for file, replaceDict in replaceDef:
-                print(file)
-                print(replaceDict)
                 if self.dependentReplaceInstructions:
                     for (
                         key,
