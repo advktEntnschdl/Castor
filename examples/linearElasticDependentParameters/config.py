@@ -80,8 +80,6 @@ studyName = "_tensileTest"
 
 inputTemplate = "input.inp"
 
-paramDict = {"_E_": [190000, 210000], "_Nu_": [0.3], "_H_": [50, 100]}
-
 config = {
     "parameterStudies": {
         studyName: {
@@ -93,10 +91,11 @@ config = {
                 "numThreads": 1,
             },
             "resDir": studyName,
-            "providedFiles": inputTemplate,
+            "providedFiles": [inputTemplate, "additionalInput"],
             "replaceInstructions": {
-                inputTemplate: {
-                    "independent": paramDict,
+                inputTemplate: {"_E_": [190000, 210000], "_Nu_": [0.3]},
+                "additionalInput/geometry.inc": {
+                    "independent": {"_H_": [50, 100]},
                     "dependent": {
                         "_nH_": lambda x: int(x["_H_"] / 10),
                     },
