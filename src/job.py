@@ -14,7 +14,9 @@ class Job:
         self.inpDir = os.path.join(self.resDir, "input")
         self.replaceDef = replaceDef
         self.type = study.type
-        self.study = study
+        self.studyInpDir = study.inpDir
+        self.simConfig = study.simConfig
+        self.studyResDir = study.resDir
 
         ppFuns = study.postProcessingInstructions.get("afterJob")
         if ppFuns:
@@ -35,7 +37,7 @@ class Job:
 
     def generateInputFromTemplates(self):
 
-        shutil.copytree(self.study.inpDir, self.inpDir)
+        shutil.copytree(self.studyInpDir, self.inpDir)
         for file, replaceDict in self.replaceDef:
             filePath = os.path.join(self.inpDir, os.path.basename(file))
             replaceInFile(filePath, replaceDict)
@@ -52,29 +54,27 @@ class Job:
         args = []
         if self.type == "EdelweissFE":
             inputFile = os.path.join(
-                self.inpDir, os.path.basename(self.study.simConfig["inputFile"])
+                self.inpDir, os.path.basename(self.simConfig["inputFile"])
             )
-            if self.study.simConfig["numThreads"]:
-                envVars.update(
-                    {"OMP_NUM_THREADS": str(self.study.simConfig["numThreads"])}
-                )
+            if self.simConfig["numThreads"]:
+                envVars.update({"OMP_NUM_THREADS": str(self.simConfig["numThreads"])})
             args = [
                 "python",
-                self.study.simConfig["executable"],
+                self.simConfig["executable"],
                 inputFile,
                 "--noplot",
             ]
 
         elif self.type == "mpFEM":
 
-            os.mkdir(self.study.simConfig["output"])
+            os.mkdir(self.simConfig["output"])
 
             args = [
-                self.study.simConfig["executable"],
+                self.simConfig["executable"],
                 "--allow_nan",
                 "-i=" + self.inpDir,
                 "-f=files",
-                "-r=" + self.study.simConfig["output"],
+                "-r=" + self.simConfig["output"],
                 "-o=result",
             ]
 
@@ -102,7 +102,7 @@ class Job:
             errorMessage("Job execution exited with an error:", self.name)
             message(" --> see stderr.txt or stdout.txt for more information")
 
-        os.chdir(self.study.resDir)
+        os.chdir(self.studyResDir)
 
         return self
 
