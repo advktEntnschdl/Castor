@@ -11,6 +11,8 @@ class Job:
     def __init__(self, replaceDef, study):
         self.name = getParamStr(replaceDef)
         self.resDir = os.path.join(study.resDir, self.name)
+        self.studyShareDir = study.shareDir
+        self.shareDir = os.path.join(self.resDir, "share")
         self.inpDir = os.path.join(self.resDir, "input")
         self.replaceDef = replaceDef
         self.type = study.type
@@ -35,15 +37,17 @@ class Job:
 
     def generateInputFromTemplates(self):
 
-        shutil.copytree(self.study.inpDir, self.inpDir)
         for file, replaceDict in self.replaceDef:
-            filePath = os.path.join(self.inpDir, os.path.basename(file))
+            filePath = os.path.join(self.shareDir, file)
             replaceInFile(filePath, replaceDict)
         return
 
     def run(self):
         message('Job "{}" started'.format(self.name))
         os.mkdir(self.resDir)
+
+        shutil.copytree(self.studyShareDir, self.shareDir)
+
         self.generateInputFromTemplates()
 
         os.chdir(self.resDir)
@@ -52,7 +56,7 @@ class Job:
         args = []
         if self.type == "EdelweissFE":
             inputFile = os.path.join(
-                self.inpDir, os.path.basename(self.study.simConfig["inputFile"])
+                self.shareDir, os.path.relpath(self.study.simConfig["inputFile"])
             )
             if self.study.simConfig["numThreads"]:
                 envVars.update(

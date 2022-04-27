@@ -9,35 +9,33 @@ from difflib import get_close_matches
 
 from .job import Job, getReplaceDictList
 from .journal import errorMessage, infoMessage, message
+from .utils import toList
 
 
 class Study:
     def __init__(self, studyDict):
         self.checkFields(studyDict)
-        self.checkValues(studyDict)
 
-        self.name = studyDict.get("name")
-        self.resDir = os.path.abspath(studyDict.get("resDir"))
-        self.inpDir = os.path.join(self.resDir, "input")
+        self.name = studyDict["name"]
+        self.resDir = os.path.abspath(studyDict["resDir"])
+        # self.inpDir = os.path.join(self.resDir, "input")
+
         head = os.path.split(inspect.stack()[1].filename)[0]
-        self.shareDir = os.path.join(os.path.abspath(head), "share")
+        self.CastorShareDir = os.path.join(os.path.abspath(head), "share")
 
-        self.type = studyDict.get("type")
+        self.type = studyDict["type"]
         self.simConfig = studyDict["simConfig"]
 
-        self.replaceInstructions = studyDict.get("replaceInstructions")
-        self.dependentReplaceInstructions = studyDict.get(
-            "dependentReplaceInstructions"
-        )
+        self.replaceInstructions = studyDict["replaceInstructions"]
+
+        self.providedFiles = toList(studyDict["providedFiles"])
+        self.shareDir = os.path.join(self.resDir, "share")
 
         self.preProcessingInstructions = studyDict["preProcessingInstructions"]
         prepFuns = self.preProcessingInstructions.get("beforeStudy")
 
         if prepFuns:
-            if type(prepFuns) == list:
-                self.prepFunList = prepFuns
-            else:
-                self.prepFunList = [prepFuns]
+            self.prepFunList = toList(prepFuns)
         else:
             self.prepFunList = []
 
@@ -45,16 +43,13 @@ class Study:
         ppFuns = self.postProcessingInstructions.get("afterStudy")
 
         if ppFuns:
-            if type(ppFuns) == list:
-                self.ppFunList = ppFuns
-            else:
-                self.ppFunList = [ppFuns]
+            self.ppFunList = toList(ppFuns)
         else:
             self.ppFunList = []
 
         self.active = studyDict.get("active") if studyDict.get("active") else True
 
-        self.generateJobListFromConfig()
+        self.checkValues(studyDict)
 
         return
 
@@ -65,6 +60,7 @@ class Study:
             "name",
             "type",
             "resDir",
+            "providedFiles",
             "replaceInstructions",
             "preProcessingInstructions",
             "postProcessingInstructions",
@@ -110,15 +106,26 @@ class Study:
                 'Value of "replaceInstructions" must be a dictionary with at least one key value pair: <fileName>: <parameterDictionary>.'
             )
             raiseError = True
+
         for key, val in studyDict["replaceInstructions"].items():
+            if os.path.isabs(key):
+                infoMessage(
+                    "Path to templatefiles must be relative to <study.resDir>/share/."
+                )
+                errorMessage("Path {} is not a relative path".format(key))
+                raiseError = True
             if not os.path.exists(key):
                 errorMessage("File {} not found.".format(key))
-                raiseError = True
+                raise FileNotFoundError
             if not val or not type(val) == dict:
                 errorMessage(
                     "Replace instruction must be a dictionary with at least one key value pair: <parameter>: <value or valueList>."
                 )
                 raiseError = True
+
+        if not studyDict["providedFiles"]:
+            errorMessage("No Files provided for study.")
+            raiseError = True
 
         if raiseError:
             raise ValueError
@@ -135,36 +142,35 @@ class Study:
                     )
                 )
 
+        self.generateJobListFromConfig()
+
         os.mkdir(self.resDir)
+
+        os.mkdir(self.shareDir)
+        self.getProvidedFiles()
+
         self.export()
 
         if self.type == "EdelweissFE":
-
-            os.mkdir(self.inpDir)
-            for templateFile in self.replaceInstructions:
-                shutil.copy(
-                    templateFile,
-                    os.path.join(self.inpDir, os.path.basename(templateFile)),
-                )
-
             inputFile = self.simConfig["inputFile"]
-            if not os.path.basename(inputFile) in map(
-                os.path.basename, self.replaceInstructions.keys()
-            ):
-                shutil.copy(
-                    inputFile, os.path.join(self.inpDir, os.path.basename(inputFile))
+            if not os.path.exists(inputFile):
+                errorMessage(
+                    'Input file "{}" not found'.format(os.path.abspath(inputFile))
                 )
+                raise FileNotFoundError
+            # toDo: check if inputFile is in provided files (or dirs)
 
         elif self.type == "mpFEM":
-            inputFolder = self.simConfig["input"]
-            shutil.copytree(inputFolder, self.inpDir)
+            # inputFolder = self.simConfig["input"]
+            # shutil.copytree(inputFolder, self.inpDir)
+            pass
 
         os.chdir(self.resDir)
 
         self.performPreProcessing()
 
         del (
-            self.dependentReplaceInstructions
+            self.replaceInstructions
         )  # magic happens here; without deleting the parallel job execution does not behave as expected; the dependentReplaceInstructions are not needed after generating the jobList
 
         runJob = operator.methodcaller("run")
@@ -181,6 +187,21 @@ class Study:
                 pass
 
         self.performPostProcessing()
+
+        return
+
+    def getProvidedFiles(self):
+        for file in self.providedFiles:
+            if not os.path.exists(file):
+                errorMessage('File "{}" not found'.format(file))
+                raise FileNotFoundError
+            if os.path.isdir(file):
+                infoMessage("Copy folder {}".format(file))
+                shutil.copytree(
+                    file, os.path.join(self.shareDir, os.path.relpath(file))
+                )
+            else:
+                shutil.copy(file, os.path.join(self.shareDir, os.path.relpath(file)))
 
         return
 
@@ -207,26 +228,33 @@ class Study:
     def getReplaceDefsPerJob(self):
         replaceDefsPerFile = []
         for templateFile, paramDict in self.replaceInstructions.items():
-            templateFile = os.path.basename(templateFile)
+            if "independent" in paramDict:
+                independentParamDict = paramDict["independent"]
+            else:
+                independentParamDict = paramDict
             replaceDefsPerFile.append(
                 [
-                    (os.path.join(self.inpDir, templateFile), replaceDict)
-                    for replaceDict in getReplaceDictList(paramDict)
+                    (templateFile, replaceDict)
+                    for replaceDict in getReplaceDictList(independentParamDict)
                 ]
             )
+
         replaceDefsPerJob = list(itertools.product(*replaceDefsPerFile))
 
         for replaceDef in replaceDefsPerJob:
-            for file, replaceDict in replaceDef:
-                if self.dependentReplaceInstructions:
+            for templateFile, replaceDict in replaceDef:
+                dependentReplaceInstructions = self.replaceInstructions[
+                    templateFile
+                ].get("dependent")
+                if dependentReplaceInstructions:
                     for (
                         key,
                         getValueFromReplaceDict,
-                    ) in self.dependentReplaceInstructions.items():
+                    ) in dependentReplaceInstructions.items():
                         try:
                             dependentValue = getValueFromReplaceDict(replaceDict)
                             replaceDict.update({key: dependentValue})
-                        except:
+                        finally:
                             pass
 
         return replaceDefsPerJob
