@@ -14,6 +14,7 @@ class Job:
         self.studyShareDir = study.shareDir
         self.shareDir = os.path.join(self.resDir, "share")
         self.inpDir = os.path.join(self.resDir, "input")
+        self.CastorShareDir = study.CastorShareDir
         self.replaceDef = replaceDef
         self.type = study.type
         self.study = study
