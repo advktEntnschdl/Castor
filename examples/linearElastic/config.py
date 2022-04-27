@@ -95,6 +95,7 @@ config = {
                 "numThreads": 1,
             },
             "resDir": studyName,
+            "providedFiles": inputTemplate,
             "replaceInstructions": {
                 inputTemplate: paramDict,
                 # add replace instructions here
