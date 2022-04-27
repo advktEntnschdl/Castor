@@ -110,9 +110,10 @@ class Study:
         for key, val in studyDict["replaceInstructions"].items():
             if os.path.isabs(key):
                 infoMessage(
-                    "Path to templatefiles must be relative to <study.resDir>/share/."
+                    "Path to template files must be relative to <study.resDir>/share/."
                 )
-                errorMessage("Path {} is not a relative path".format(key))
+                infoMessage("Template files must be provided to the study.")
+                errorMessage("Path {} is not a relative path.".format(key))
                 raiseError = True
             if not os.path.exists(key):
                 errorMessage("File {} not found.".format(key))
