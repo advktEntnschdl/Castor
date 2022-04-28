@@ -1,8 +1,10 @@
+# flake8: noqa -- this tells flake8 to ignore this file
 #!/usr/bin/pvpython
 
-from paraview.simple import *
-import time
 import argparse
+import time
+
+from paraview.simple import *
 
 parser = argparse.ArgumentParser(
     description="Render a paraview screenshot and export to file"
@@ -46,30 +48,9 @@ args = parser.parse_args()
 reader = EnSightReader(CaseFileName=args.case)
 reader.UpdatePipeline()
 
-numberOfMultiblocks = (
-    reader.GetDataInformation().GetCompositeDataInformation().GetNumberOfChildren()
-)
-blockAllIndex = -1
-for i in range(numberOfMultiblocks):
-    name = reader.GetDataInformation().GetCompositeDataInformation().GetName(i)
-    if name == "all":
-        blockAllIndex = i + 1  ## should be i + 1 ?
-
-if blockAllIndex == -1:
-    raise (Exception("could not identify block 'all' in the case file"))
-# print("Block 'all' has index {:}".format(blockAllIndex))
-
 warped = WarpByVector(
     Input=reader, Vectors="displacement", ScaleFactor=args.scalefactor
 )
-
-theAllBlock = ExtractBlock(
-    Input=warped,
-    BlockIndices=[
-        blockAllIndex,
-    ],
-)
-theAllBlock.UpdatePipeline()
 
 # position camera
 view = GetActiveView()
@@ -88,8 +69,7 @@ colorPalette.Edges = [0.3, 0.3, 0.3]
 colorPalette.Text = [0.0, 0.0, 0.0]
 
 # set background color
-# view.Background = [.8, .8, .8] # gray
-view.Background = [1.0, 1.0, 1.0]  # white
+colorPalette.Background = [1.0, 1.0, 1.0]  # white
 
 
 # nice setting for 3D
@@ -100,11 +80,11 @@ view.Background = [1.0, 1.0, 1.0]  # white
 import numpy as np
 
 campos = np.array([[1], [0], [0]])
-# Drehwinkel
+# view rotation angles
 θx = np.pi / 180 * 0
 θy = np.pi / 180 * -45
 θz = np.pi / 180 * 15
-# Drehmatrizen
+# rotation matrices
 Rx = np.array([[1, 0, 0], [0, np.cos(θx), -np.sin(θx)], [0, np.sin(θx), np.cos(θx)]])
 Ry = np.array([[np.cos(θy), 0, np.sin(θy)], [0, 1, 0], [-np.sin(θy), 0, np.cos(θy)]])
 Rz = np.array([[np.cos(θz), -np.sin(θz), 0], [np.sin(θz), np.cos(θz), 0], [0, 0, 1]])
@@ -136,6 +116,8 @@ view.ViewSize = [width, height]  # [width, height]
 
 dp = GetDisplayProperties()
 
+dp.BlockSelectors = ["/Root/all"]
+
 # ColorBy( dp, value = ('POINTS', 'displacement', 'magnitude'))
 # print(tuple(args.colorby))
 ColorBy(dp, value=args.colorby)
@@ -149,7 +131,7 @@ LUT = GetColorTransferFunction(args.colorby[1])
 LUTColorBar = GetScalarBar(LUT, view)
 # change scalar bar placement
 LUTColorBar.Orientation = "Horizontal"
-LUTColorBar.WindowLocation = "LowerCenter"
+LUTColorBar.WindowLocation = "Lower Center"
 LUTColorBar.ScalarBarLength = 0.4
 
 # find settings proxy
