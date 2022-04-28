@@ -21,7 +21,7 @@ class Study:
         # self.inpDir = os.path.join(self.resDir, "input")
 
         head = os.path.split(inspect.stack()[1].filename)[0]
-        self.CastorShareDir = os.path.join(os.path.abspath(head), "share")
+        self.castorShareDir = os.path.join(os.path.abspath(head), "share")
 
         self.type = studyDict["type"]
         self.simConfig = studyDict["simConfig"]
