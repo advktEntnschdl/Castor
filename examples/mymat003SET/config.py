@@ -1,19 +1,15 @@
-import subprocess
-import time
-from datetime import datetime
 import os
-import numpy as np
-from datetime import datetime
+import subprocess
 
-# ---------------------------------------
-# post processing
-# ---------------------------------------
 import matplotlib
 import matplotlib.style
+import numpy as np
+import PyPDF4
+from getLayout import getLayout
 from matplotlib import pyplot as plt
 from matplotlib import rcParams
-import PyPDF4
-from getLayout import *
+
+# from datetime import datetime
 
 paper = (5.875, 4.125)  # size in inches
 # paperA4 = (5.875, 4.125) # size in inches
@@ -22,16 +18,9 @@ matplotlib.style.use("seaborn-colorblind")
 rcParams["font.family"] = ["monospace"]
 rcParams["font.monospace"] = ["FreeMono"]
 
-import PyPDF4
 
 mergedPdf = PyPDF4.PdfFileMerger()
 # ---------------------------------------
-
-studyName = "_SET"
-studyName += "_"
-studyName += datetime.now().strftime("%Y%m%dT%H%M")
-
-templateFile = "triaxTemplate.inp"
 
 
 def generateJobPage(job):
@@ -60,10 +49,11 @@ def generateJobPage(job):
     # clrString = "CELLS strain \\(partial\\)"
     # clrString = "CELLS e \\(partial\\)"
 
-    pythonCmd = "/usr/bin/python"
+    # pythonCmd = "/usr/bin/python"
+    pythonCmd = "/home/paul/Downloads/paraview_build/bin/pvpython"
     args = [
         pythonCmd,
-        "~/projects/pvpython/renderWarped3D.py",
+        "share/renderWarped3D.py",
         "--case=esExport.case",
         "--dpi=300",
         "--width={}".format(paper[0] / 2),
@@ -104,7 +94,7 @@ def generateJobPage(job):
 
     args = [
         "pdftk",
-        os.path.join(job.study.shareDir, "UIBK_A4Landscape.pdf"),
+        os.path.join(job.castorShareDir, "UIBK_A4Landscape.pdf"),
         "stamp",
         "{}.pdf".format(job.name),
         "output",
@@ -186,7 +176,7 @@ def generateStudyPage(study):
 
     args = [
         "pdftk",
-        os.path.join(study.shareDir, "UIBK_A4Landscape.pdf"),
+        os.path.join(study.castorShareDir, "UIBK_A4Landscape.pdf"),
         "stamp",
         "{}.pdf".format(study.name),
         "output",
@@ -216,10 +206,17 @@ def mergePDFs(study):
     return
 
 
+studyName = "_SET"
+# studyName += "_"
+# studyName += datetime.now().strftime("%Y%m%dT%H%M")
+
+templateFile = "triaxTemplate.inp"
+
 paramDict = {
     "_PINI_": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
 }
 
+inputTemplate = "triaxTemplate.inp"
 
 config = {
     "parameterStudies": {
@@ -228,12 +225,13 @@ config = {
             "type": "EdelweissFE",
             "simConfig": {
                 "executable": "~/projects/EdelweissFE/edelweiss.py",
-                "inputFile": "triaxTemplate.inp",
+                "inputFile": inputTemplate,
                 "numThreads": 1,
             },
             "resDir": studyName,
+            "providedFiles": [inputTemplate, "renderWarped3D.py"],
             "replaceInstructions": {
-                "triaxTemplate.inp": paramDict,
+                inputTemplate: paramDict,
                 # add replace instructions here
             },
             "preProcessingInstructions": {
