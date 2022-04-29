@@ -9,7 +9,7 @@ from difflib import get_close_matches
 
 from .job import Job, getReplaceDictList
 from .journal import errorMessage, infoMessage, message
-from .utils import toList
+from .utils import listFiles, toList
 
 
 class Study:
@@ -107,26 +107,64 @@ class Study:
             )
             raiseError = True
 
+        if not studyDict["providedFiles"]:
+            errorMessage("No Files provided for study.")
+            raiseError = True
+
+        providedFilesList = []
+        for file in toList(studyDict["providedFiles"]):
+            file = os.path.expanduser(file)
+            if os.path.isdir(file):
+                providedFilesList.extend(listFiles(file))
+            else:
+                providedFilesList.append(file)
+            if not os.path.exists(file):
+                fileType = {True: "directory", False: "file"}[os.path.isdir(file)]
+                infoMessage(file)
+                errorMessage("Provided {} {} not found.".format(fileType, file))
+                raise FileNotFoundError
+
+        for file in studyDict["replaceInstructions"]:
+            if file not in providedFilesList:
+                infoMessage("Template files must be provided to the study.")
+                errorMessage("File {} needs to be provided.".format(file))
+                raise FileNotFoundError
+
         for key, val in studyDict["replaceInstructions"].items():
             if os.path.isabs(key):
-                infoMessage(
-                    "Path to template files must be relative to <study.resDir>/share/."
-                )
-                infoMessage("Template files must be provided to the study.")
+                infoMessage("Path to template files must be relative to share/.")
                 errorMessage("Path {} is not a relative path.".format(key))
                 raiseError = True
-            if not os.path.exists(key):
-                errorMessage("File {} not found.".format(key))
-                raise FileNotFoundError
+
             if not val or not type(val) == dict:
                 errorMessage(
                     "Replace instruction must be a dictionary with at least one key value pair: <parameter>: <value or valueList>."
                 )
                 raiseError = True
 
-        if not studyDict["providedFiles"]:
-            errorMessage("No Files provided for study.")
-            raiseError = True
+        if studyDict["type"] == "EdelweissFE":
+            executable = studyDict["simConfig"]["executable"]
+            executable = os.path.expanduser(executable)
+
+            inputFile = studyDict["simConfig"]["inputFile"]
+
+            if not os.path.exists(executable):
+                print(os.path.exists(executable))
+                errorMessage(
+                    "EdelweissFE executable not found at {}.".format(executable)
+                )
+                raise FileNotFoundError
+            if inputFile not in providedFilesList:
+                errorMessage(
+                    "EdelweissFE input file {} needs to be provided.".format(inputFile)
+                )
+                raise FileNotFoundError
+            if not os.path.relpath(inputFile):
+                infoMessage(
+                    "Path to EdelweissFE input file must be relative to share/."
+                )
+                errorMessage("Path to EdelweissFE input file is not a relative path.")
+                raiseError = True
 
         if raiseError:
             raise ValueError
@@ -152,19 +190,19 @@ class Study:
 
         self.export()
 
-        if self.type == "EdelweissFE":
-            inputFile = self.simConfig["inputFile"]
-            if not os.path.exists(inputFile):
-                errorMessage(
-                    'Input file "{}" not found'.format(os.path.abspath(inputFile))
-                )
-                raise FileNotFoundError
-            # toDo: check if inputFile is in provided files (or dirs)
+        # if self.type == "EdelweissFE":
+        #     inputFile = self.simConfig["inputFile"]
+        #     if not os.path.exists(inputFile):
+        #         errorMessage(
+        #             'Input file "{}" not found'.format(os.path.abspath(inputFile)) - done in study.checkValues
+        #         )
+        #         raise FileNotFoundError
+        #     # toDo: check if inputFile is in provided files (or dirs)
 
-        elif self.type == "mpFEM":
-            # inputFolder = self.simConfig["input"]
-            # shutil.copytree(inputFolder, self.inpDir)
-            pass
+        # elif self.type == "mpFEM":
+        #     inputFolder = self.simConfig["input"]
+        #     shutil.copytree(inputFolder, self.inpDir)
+        #     pass
 
         os.chdir(self.resDir)
 
@@ -172,7 +210,7 @@ class Study:
 
         del (
             self.replaceInstructions
-        )  # magic happens here; without deleting the parallel job execution does not behave as expected; the dependentReplaceInstructions are not needed after generating the jobList
+        )  # magic happens here; without deleting the (dependent) replace instructions, parallel job execution does not behave as expected; the replace instructions are not needed after generating the jobList
 
         runJob = operator.methodcaller("run")
         if args.parallelJobs[0] > 1:
