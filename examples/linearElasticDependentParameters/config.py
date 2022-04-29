@@ -99,7 +99,7 @@ config = {
                     "dependent": {
                         "_nH_": lambda x: int(x["_H_"] / 10),
                     },
-                }
+                },
                 # add replace instructions here
             },
             "preProcessingInstructions": {
@@ -110,7 +110,6 @@ config = {
                 "afterStudy": [makeStudyPlot, mergePDFs],
             },
             "active": True,
-            "newField": {"fun": lambda x: x},
         },
     },
 }
