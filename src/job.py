@@ -17,7 +17,9 @@ class Job:
         self.castorShareDir = study.castorShareDir
         self.replaceDef = replaceDef
         self.type = study.type
-        self.study = study
+        self.studyInpDir = study.inpDir
+        self.simConfig = study.simConfig
+        self.studyResDir = study.resDir
 
         ppFuns = study.postProcessingInstructions.get("afterJob")
         if ppFuns:
@@ -57,29 +59,27 @@ class Job:
         args = []
         if self.type == "EdelweissFE":
             inputFile = os.path.join(
-                self.shareDir, os.path.relpath(self.study.simConfig["inputFile"])
+                self.inpDir, os.path.basename(self.simConfig["inputFile"])
             )
-            if self.study.simConfig["numThreads"]:
-                envVars.update(
-                    {"OMP_NUM_THREADS": str(self.study.simConfig["numThreads"])}
-                )
+            if self.simConfig["numThreads"]:
+                envVars.update({"OMP_NUM_THREADS": str(self.simConfig["numThreads"])})
             args = [
                 "python",
-                self.study.simConfig["executable"],
+                self.simConfig["executable"],
                 inputFile,
                 "--noplot",
             ]
 
         elif self.type == "mpFEM":
 
-            os.mkdir(self.study.simConfig["output"])
+            os.mkdir(self.simConfig["output"])
 
             args = [
-                self.study.simConfig["executable"],
+                self.simConfig["executable"],
                 "--allow_nan",
                 "-i=" + self.inpDir,
                 "-f=files",
-                "-r=" + self.study.simConfig["output"],
+                "-r=" + self.simConfig["output"],
                 "-o=result",
             ]
 
@@ -107,7 +107,7 @@ class Job:
             errorMessage("Job execution exited with an error:", self.name)
             message(" --> see stderr.txt or stdout.txt for more information")
 
-        os.chdir(self.study.resDir)
+        os.chdir(self.studyResDir)
 
         return self
 
