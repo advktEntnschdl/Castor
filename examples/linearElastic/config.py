@@ -1,11 +1,13 @@
 import os
-from datetime import datetime
 
 import matplotlib
 import matplotlib.style
 import numpy as np
 import PyPDF4
 from matplotlib import pyplot as plt
+
+# from datetime import datetime
+
 
 matplotlib.style.use("seaborn-colorblind")
 
@@ -74,8 +76,8 @@ def mergePDFs(study):
 
 
 studyName = "_tensileTest"
-studyName += "_"
-studyName += datetime.now().strftime("%Y%m%dT%H%M")
+# studyName += "_"
+# studyName += datetime.now().strftime("%Y%m%dT%H%M")
 
 inputTemplate = "input.inp"
 
