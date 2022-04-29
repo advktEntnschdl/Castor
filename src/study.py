@@ -237,7 +237,7 @@ class Study:
             if os.path.isdir(file):
                 infoMessage("Copy folder {}".format(file))
                 shutil.copytree(
-                    file, os.path.join(self.shareDir, os.path.relpath(file))
+                    file, os.path.join(self.shareDir, os.path.basename(file))
                 )
             else:
                 shutil.copy(file, os.path.join(self.shareDir, os.path.relpath(file)))

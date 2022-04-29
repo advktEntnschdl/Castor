@@ -13,11 +13,9 @@ class Job:
         self.resDir = os.path.join(study.resDir, self.name)
         self.studyShareDir = study.shareDir
         self.shareDir = os.path.join(self.resDir, "share")
-        self.inpDir = os.path.join(self.resDir, "input")
         self.castorShareDir = study.castorShareDir
         self.replaceDef = replaceDef
         self.type = study.type
-        self.studyInpDir = study.inpDir
         self.simConfig = study.simConfig
         self.studyResDir = study.resDir
 
@@ -59,7 +57,7 @@ class Job:
         args = []
         if self.type == "EdelweissFE":
             inputFile = os.path.join(
-                self.inpDir, os.path.basename(self.simConfig["inputFile"])
+                self.shareDir, os.path.basename(self.simConfig["inputFile"])
             )
             if self.simConfig["numThreads"]:
                 envVars.update({"OMP_NUM_THREADS": str(self.simConfig["numThreads"])})
@@ -77,7 +75,7 @@ class Job:
             args = [
                 self.simConfig["executable"],
                 "--allow_nan",
-                "-i=" + self.inpDir,
+                "-i=" + os.path.join(self.shareDir, self.simConfig["input"]),
                 "-f=files",
                 "-r=" + self.simConfig["output"],
                 "-o=result",
