@@ -115,9 +115,12 @@ class Study:
         for file in toList(studyDict["providedFiles"]):
             file = os.path.expanduser(file)
             if os.path.isdir(file):
-                providedFilesList.extend(listFiles(file))
+                fileList = listFiles(file)
+                (head, tail) = os.path.split(file)
+                fileList = [os.path.relpath(file, start=head) for file in fileList]
+                providedFilesList.extend(fileList)
             else:
-                providedFilesList.append(file)
+                providedFilesList.append(os.path.basename(file))
             if not os.path.exists(file):
                 fileType = {True: "directory", False: "file"}[os.path.isdir(file)]
                 infoMessage(file)
@@ -231,6 +234,7 @@ class Study:
 
     def getProvidedFiles(self):
         for file in self.providedFiles:
+            file = os.path.expanduser(file)
             if not os.path.exists(file):
                 errorMessage('File "{}" not found'.format(file))
                 raise FileNotFoundError
