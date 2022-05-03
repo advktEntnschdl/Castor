@@ -239,12 +239,13 @@ class Study:
                 errorMessage('File "{}" not found'.format(file))
                 raise FileNotFoundError
             if os.path.isdir(file):
-                infoMessage("Copy folder {}".format(file))
+                infoMessage("Providing folder {}".format(file))
                 shutil.copytree(
                     file, os.path.join(self.shareDir, os.path.basename(file))
                 )
             else:
-                shutil.copy(file, os.path.join(self.shareDir, os.path.relpath(file)))
+                infoMessage("Providing file {}".format(file))
+                shutil.copy(file, os.path.join(self.shareDir, os.path.basename(file)))
 
         return
 
