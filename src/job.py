@@ -5,6 +5,7 @@ import subprocess
 import time
 
 from .journal import errorMessage, infoMessage, message
+from .utils import toList
 
 
 class Job:
@@ -128,7 +129,9 @@ def getReplaceDictList(paramDict):
     replaceDictList = []
 
     params = paramDict.keys()
-    groupedVals = list(itertools.product(*(paramDict[key] for key in paramDict)))
+    groupedVals = list(
+        itertools.product(*(toList(paramDict[key]) for key in paramDict))
+    )
 
     for valGroup in groupedVals:
         auxList = [None] * (len(params) * 2)
