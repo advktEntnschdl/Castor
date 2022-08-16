@@ -33,6 +33,7 @@ class Job:
 
     def performPostProcessing(self):
         for ppFun in self.ppFunList:
+            os.chdir(self.resDir)
             ppFun(self)
 
         return
