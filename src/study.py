@@ -251,10 +251,12 @@ class Study:
 
     def performPreProcessing(self):
         for ppFun in self.prepFunList:
+            os.chdir(self.resDir)
             ppFun(self)
 
     def performPostProcessing(self):
         for ppFun in self.ppFunList:
+            os.chdir(self.resDir)
             ppFun(self)
 
         return
