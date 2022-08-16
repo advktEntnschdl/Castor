@@ -8,6 +8,7 @@ maxCharJustified = 68
 
 def printHeader():
     printSepline()
+    printCenteredLine("")
     printCenteredLine("CASTOR")
     printCenteredLine("")
     printCenteredLine("-- MaterialModelingToolbox --")
