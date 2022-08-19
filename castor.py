@@ -48,5 +48,3 @@ if __name__ == "__main__":
         infoMessage(
             'Use field "parameterStudies" in config dictionary to define a study.'
         )
-
-    printSepline()
