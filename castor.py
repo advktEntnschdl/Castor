@@ -15,6 +15,7 @@ if __name__ == "__main__":
     parser.add_argument("file", type=str, nargs=1)
     parser.add_argument("--parallelJobs", type=int, default=[1], nargs=1)
     parser.add_argument("--overwrite", default=False, action="store_true")
+    parser.add_argument("--onlyPostProcessing", default=False, action="store_true")
 
     args = parser.parse_args()
     printHeader()
@@ -27,10 +28,19 @@ if __name__ == "__main__":
     upmostDir = os.getcwd()
     if "parameterStudies" in config:
         for studyName, studyDict in config["parameterStudies"].items():
-            study = Study(studyDict)
+            study = Study(studyDict, args)
             if study.active:
-                message(study.name + " (active) ")
-                study.run(args)
+                # message("Study", study.name, "(active)")
+                if not args.onlyPostProcessing:
+                    study.run(args)
+                else:
+                    message(
+                        "Functions provided to study are not overwritten by design; this may be changed later."
+                    )
+                    for job in study.jobList:
+                        job.performPostProcessing()
+                    study.performPostProcessing()
+
                 os.chdir(upmostDir)
             else:
                 message(" -->  " + studyName + "(inactive)")
