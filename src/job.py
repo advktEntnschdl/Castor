@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import time
+from datetime import datetime
 
 from .utils import toList
 
@@ -35,15 +36,15 @@ class Job:
         os.mkdir(self.resDir)
         shutil.copytree(self.studyShareDir, self.shareDir)
         self.generateInputFromTemplates()
-        self.status = "pending"
-        with open(self.staFile, "w") as f:
-            f.write(self.status + "\n")
+        self.updateStatus("pending")
 
         return
 
     def updateStatus(self, status):
         self.status = status
+        timeStr = datetime.now().strftime("%Y-%m-%d %H:%M")
         with open(self.staFile, "a") as f:
+            f.write(timeStr + "\n")
             f.write(self.status + "\n")
 
     def performPostProcessing(self):
