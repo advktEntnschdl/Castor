@@ -1,1 +1,1 @@
-python ../../castor.py config.py --parallelJobs=10 --overwrite
+python ../../castor.py config.py --parallelJobs=4 --overwrite
