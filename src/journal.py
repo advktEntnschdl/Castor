@@ -1,10 +1,11 @@
 # from rich import print
+from os import get_terminal_size
 from textwrap import wrap
 
 # from rich import print
 
-maxCharCentered = 70
-maxCharAligned = 68
+maxCharCentered = get_terminal_size()[0] - 2  # 70
+maxCharAligned = maxCharCentered - 2  # 68
 
 
 def printHeader():
@@ -76,11 +77,10 @@ def checkStatusChange(study):
 
 
 def printStatus(study):
-    printSepline()
-    message("Study:", study.name)
+    message("Study: ", study.name)
     printLine()
     for job in study.jobList:
-        message("Job:", job.name)
+        message("Job: ", job.name)
         with open(job.staFile, "r") as f:
             line = ""
             for line in f:
