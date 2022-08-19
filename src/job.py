@@ -4,21 +4,24 @@ import shutil
 import subprocess
 import time
 
-from .journal import errorMessage, infoMessage, message
 from .utils import toList
 
 
 class Job:
-    def __init__(self, replaceDef, study):
+    def __init__(self, study, replaceDef, jobId):
         self.name = getParamStr(replaceDef)
+        self.id = jobId
+
         self.resDir = os.path.join(study.resDir, self.name)
         self.studyShareDir = study.shareDir
         self.shareDir = os.path.join(self.resDir, "share")
         self.castorShareDir = study.castorShareDir
+
         self.replaceDef = replaceDef
         self.type = study.type
         self.simConfig = study.simConfig
         self.studyResDir = study.resDir
+        self.staFile = os.path.join(self.resDir, self.name + ".cstrsta")
 
         ppFuns = study.postProcessingInstructions.get("afterJob")
         if ppFuns:
@@ -29,13 +32,24 @@ class Job:
         else:
             self.ppFunList = []
 
+        os.mkdir(self.resDir)
+        shutil.copytree(self.studyShareDir, self.shareDir)
+        self.generateInputFromTemplates()
+        self.status = "pending"
+        with open(self.staFile, "w") as f:
+            f.write(self.status + "\n")
+
         return
+
+    def updateStatus(self, status):
+        self.status = status
+        with open(self.staFile, "a") as f:
+            f.write(self.status + "\n")
 
     def performPostProcessing(self):
         for ppFun in self.ppFunList:
             os.chdir(self.resDir)
             ppFun(self)
-
         return
 
     def generateInputFromTemplates(self):
@@ -46,14 +60,9 @@ class Job:
         return
 
     def run(self):
-        message('Job "{}" started'.format(self.name))
-        os.mkdir(self.resDir)
-
-        shutil.copytree(self.studyShareDir, self.shareDir)
-
-        self.generateInputFromTemplates()
-
         os.chdir(self.resDir)
+        self.updateStatus("running")
+        # message('Job "{}" started'.format(self.name))
 
         envVars = dict(os.environ)
         args = []
@@ -90,22 +99,20 @@ class Job:
             )
             try:
                 while subproc.poll() is None:
+                    # self.updateStatus("running")
                     time.sleep(0.1)
             except KeyboardInterrupt:
+                self.updateStatus("TERMINATED job terminated by user")
                 subproc.kill()
 
-        infoMessage(
-            'Simulation for job "{}" exited with code {}'.format(
-                self.name, subproc.poll()
-            )
-        )
-
         if subproc.poll() >= 0:
+            self.updateStatus("SUCCESS job exited with code {}".format(subproc.poll()))
             self.performPostProcessing()
-            message('Job "{}" finished'.format(self.name))
         else:
-            errorMessage("Job execution exited with an error:", self.name)
-            message(" --> see stderr.txt or stdout.txt for more information")
+            self.updateStatus("ERROR job exited with code {}".format(subproc.poll()))
+            # errorMessage("Job execution exited with an error:", self.name)
+            # message(" --> see stderr.txt or stdout.txt for more information")
+            pass
 
         os.chdir(self.studyResDir)
 

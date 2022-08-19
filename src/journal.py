@@ -1,9 +1,10 @@
+# from rich import print
 from textwrap import wrap
 
-from rich import print
+# from rich import print
 
 maxCharCentered = 70
-maxCharJustified = 68
+maxCharAligned = 68
 
 
 def printHeader():
@@ -25,20 +26,67 @@ def errorMessage(*args):
     message(*("ERROR:", *args))
 
 
-def message(*args):
+def message(*args, **kwargs):
+    if kwargs.get("align") == "right":
+        printFun = printRightAlignedLine
+    else:
+        printFun = printLeftAlignedLine
+
     if args:
         string = str(args[0])
         for arg in args[1:]:
             string += " " + str(arg)
-        if len(string) < maxCharJustified:
-            printJustifiedLine(string)
+        if len(string) < maxCharAligned:
+            if not kwargs.get("makeSpace"):
+                printFun(string)
+            else:
+                print("\033[F", end="")
         else:
-            stringList = wrap(string, maxCharJustified - 3)
-            printJustifiedLine(stringList[0])
+            stringList = wrap(string, maxCharAligned - 3)
+            printFun(stringList[0])
             for string in stringList[1:]:
-                printJustifiedLine("..." + string)
+                if not kwargs.get("makeSpace"):
+                    printFun("..." + string)
+                else:
+                    print("\033[F", end="")
     else:
-        printJustifiedLine(" ")
+        printFun(" ")
+
+
+# class StatusMonitor:
+#    def __init__(self, study):
+#        self.study = study #Name = study.name
+#        self.statusDict = {}
+#
+#
+#    def initializeStatusMonitor(self):
+#        for job in self.study.jobList:
+#            self.statusDict[job.id] = job.status
+#        #message(self.study.name)
+#        #for job in self.study.jobList:
+#        #    message(job.name)
+#        #    message(" " * len(job.name), align="right")
+#
+#    def updateStatusMonitor(self, job):
+#        self.statusDict[job.id] = job.status
+#        self.printStatus()
+#
+def checkStatusChange(study):
+    pass
+
+
+def printStatus(study):
+    printSepline()
+    message("Study:", study.name)
+    printLine()
+    for job in study.jobList:
+        message("Job:", job.name)
+        with open(job.staFile, "r") as f:
+            line = ""
+            for line in f:
+                pass
+            message(line.strip(), align="right")
+    printSepline()
 
 
 def printSepline():
@@ -53,5 +101,9 @@ def printCenteredLine(string):
     print("|{:^{}s}|".format(string, maxCharCentered))
 
 
-def printJustifiedLine(string):
-    print("| {:<{}s} |".format(string, maxCharJustified))
+def printLeftAlignedLine(string):
+    print("| {:<{}s} |".format(string, maxCharAligned))
+
+
+def printRightAlignedLine(string):
+    print("| {:.>{}s} |".format(string, maxCharAligned))

@@ -2,18 +2,20 @@ import inspect
 import itertools
 import operator
 import os
-import pickle
 import shutil
+import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from difflib import get_close_matches
 
+import dill as pickle
+
 from .job import Job, getReplaceDictList
-from .journal import errorMessage, infoMessage, message
+from .journal import errorMessage, infoMessage, message, printStatus
 from .utils import listFiles, toList
 
 
 class Study:
-    def __init__(self, studyDict):
+    def __init__(self, studyDict, args):
         self.checkFields(studyDict)
 
         self.name = studyDict["name"]
@@ -30,6 +32,7 @@ class Study:
 
         self.providedFiles = toList(studyDict["providedFiles"])
         self.shareDir = os.path.join(self.resDir, "share")
+        self.expDir = os.path.join(self.resDir, "export")
 
         self.preProcessingInstructions = studyDict["preProcessingInstructions"]
         prepFuns = self.preProcessingInstructions.get("beforeStudy")
@@ -50,6 +53,27 @@ class Study:
         self.active = studyDict.get("active") if studyDict.get("active") else True
 
         self.checkValues(studyDict)
+
+        if os.path.exists(self.resDir):
+            if args.overwrite:
+                message("Overwriting directory {}".format(self.resDir))
+                shutil.rmtree(self.resDir)
+            else:
+                raise FileExistsError(
+                    "Directory {} exists. Use --overwrite keyword if you want to overwrite it.".format(
+                        self.resDir
+                    )
+                )
+
+        os.mkdir(self.resDir)
+        os.mkdir(self.shareDir)
+        self.getProvidedFiles()
+
+        self.generateJobListFromConfig()
+
+        printStatus(self)
+
+        self.export()
 
         return
 
@@ -173,39 +197,6 @@ class Study:
             raise ValueError
 
     def run(self, args):
-        if os.path.exists(self.resDir):
-            if args.overwrite:
-                message("Overwriting directory {}".format(self.resDir))
-                shutil.rmtree(self.resDir)
-            else:
-                message(
-                    "Directory {} exists. Use --overwrite keyword if you want to overwrite it.".format(
-                        self.resDir
-                    )
-                )
-
-        self.generateJobListFromConfig()
-
-        os.mkdir(self.resDir)
-
-        os.mkdir(self.shareDir)
-        self.getProvidedFiles()
-
-        self.export()
-
-        # if self.type == "EdelweissFE":
-        #     inputFile = self.simConfig["inputFile"]
-        #     if not os.path.exists(inputFile):
-        #         errorMessage(
-        #             'Input file "{}" not found'.format(os.path.abspath(inputFile)) - done in study.checkValues
-        #         )
-        #         raise FileNotFoundError
-        #     # toDo: check if inputFile is in provided files (or dirs)
-
-        # elif self.type == "mpFEM":
-        #     inputFolder = self.simConfig["input"]
-        #     shutil.copytree(inputFolder, self.inpDir)
-        #     pass
 
         os.chdir(self.resDir)
 
@@ -221,11 +212,27 @@ class Study:
                 futures = list(
                     map(lambda job: executor.submit(runJob, job), self.jobList)
                 )
+                # while not all([future.done() for future in futures]):
+                #    printStatus(self)
+                #    time.sleep(.1)
+                # executor.shutdown(wait=True, cancel_futures=True)
+
+                # try:
+                #    pass
+                # except KeyboardInterrupt:
+                #    print("Elooo!")
+                #    for future in futures:
+                #        future.cancel()
 
                 for future in as_completed(futures):
-                    pass
+                    futureJob = future.result()
+                    self.jobList[futureJob.id] = futureJob
+                    time.sleep(0.1)
+                    printStatus(self)
+
         else:
             for result in map(runJob, self.jobList):
+                printStatus(self)
                 pass
 
         self.performPostProcessing()
@@ -265,8 +272,10 @@ class Study:
         replaceDefsPerJob = self.getReplaceDefsPerJob()
 
         jobList = []
+        id = 0
         for replaceDef in replaceDefsPerJob:
-            jobList.append(Job(replaceDef, self))
+            jobList.append(Job(self, replaceDef, id))
+            id += 1
         self.jobList = jobList
 
         return
@@ -306,10 +315,15 @@ class Study:
         return replaceDefsPerJob
 
     def export(self):
+        os.mkdir(self.expDir)
+
         exportName = "jobNames.pickle"
         jobNames = [job.name for job in self.jobList]
-
-        with open(os.path.join(self.resDir, exportName), "wb") as fout:
+        with open(os.path.join(self.expDir, "jobNames.pickle"), "wb") as fout:
             pickle.dump(jobNames, fout)
+
+        exportName = "study.pickle"
+        with open(os.path.join(self.expDir, exportName), "wb") as fout:
+            pickle.dump(self, fout)
 
         return
