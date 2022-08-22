@@ -3,14 +3,15 @@ import itertools
 import operator
 import os
 import shutil
-import time
+import threading
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from difflib import get_close_matches
+from threading import Event
 
 import dill as pickle
 
 from .job import Job, getReplaceDictList
-from .journal import errorMessage, infoMessage, message, printStatus
+from .journal import errorMessage, infoMessage, message, monitor, printStatus
 from .utils import listFiles, toList
 
 
@@ -70,8 +71,6 @@ class Study:
         self.getProvidedFiles()
 
         self.generateJobListFromConfig()
-
-        printStatus(self)
 
         self.export()
 
@@ -206,34 +205,39 @@ class Study:
             self.replaceInstructions
         )  # magic happens here; without deleting the (dependent) replace instructions, parallel job execution does not behave as expected; the replace instructions are not needed after generating the jobList
 
+        event = Event()
+        thread = threading.Thread(target=monitor, args=(self, event))
+        thread.start()
+
+        # event = Event()
+        # with ThreadPoolExecutor(max_workers=2) as executor:
+        #    executor.submit(monitor, self, event)
+
         runJob = operator.methodcaller("run")
-        if args.parallelJobs[0] > 1:
+        if args.parallelJobs[0] >= 1:
+
             with ProcessPoolExecutor(max_workers=args.parallelJobs[0]) as executor:
+                executor.map(runJob, self.jobList)
+                # for job in self.jobList:
+                #    executor.submit(job.run())
+                # executor.map(runJob, self.jobList)
+
+                # executor.shutdown(wait=True, cancel_futures=False)
+                # wait(futures)
+
                 futures = list(
                     map(lambda job: executor.submit(runJob, job), self.jobList)
                 )
-                # while not all([future.done() for future in futures]):
-                #    printStatus(self)
-                #    time.sleep(.1)
-                # executor.shutdown(wait=True, cancel_futures=True)
-
-                # try:
-                #    pass
-                # except KeyboardInterrupt:
-                #    print("Elooo!")
-                #    for future in futures:
-                #        future.cancel()
-
                 for future in as_completed(futures):
                     futureJob = future.result()
                     self.jobList[futureJob.id] = futureJob
-                    time.sleep(0.1)
                     printStatus(self)
+        event.set()
 
-        else:
-            for result in map(runJob, self.jobList):
-                printStatus(self)
-                pass
+        # print("Event should be set here")
+        # event.set()
+        # print("alive?:", thread.is_alive())
+        # print("Monitor should have stopped")
 
         self.performPostProcessing()
 

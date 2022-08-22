@@ -1,10 +1,11 @@
 # from rich import print
-from os import get_terminal_size
+import os
+import time
 from textwrap import wrap
 
 # from rich import print
 
-maxCharCentered = get_terminal_size()[0] - 2  # 70
+maxCharCentered = os.get_terminal_size()[0] - 2  # 70
 maxCharAligned = maxCharCentered - 2  # 68
 
 
@@ -72,8 +73,22 @@ def message(*args, **kwargs):
 #        self.statusDict[job.id] = job.status
 #        self.printStatus()
 #
-def checkStatusChange(study):
-    pass
+
+
+def monitor(study, event):
+    lastChange = 0.0
+    latestChange = 0.0
+    printStatus(study)
+    while not event.is_set():
+        print(event.is_set())
+        for job in study.jobList:
+            latestChange = max(latestChange, os.path.getmtime(job.staFile))
+        if latestChange > lastChange:
+            lastChange = latestChange
+            printStatus(study)
+        time.sleep(0.1)
+    else:
+        return
 
 
 def printStatus(study):
