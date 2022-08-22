@@ -80,7 +80,6 @@ def monitor(study, event):
     latestChange = 0.0
     printStatus(study)
     while not event.is_set():
-        print(event.is_set())
         for job in study.jobList:
             latestChange = max(latestChange, os.path.getmtime(job.staFile))
         if latestChange > lastChange:
