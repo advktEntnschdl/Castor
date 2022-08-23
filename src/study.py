@@ -4,7 +4,7 @@ import operator
 import os
 import shutil
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 from difflib import get_close_matches
 
 import dill as pickle
@@ -20,7 +20,6 @@ class Study:
 
         self.name = studyDict["name"]
         self.resDir = os.path.abspath(studyDict["resDir"])
-        # self.inpDir = os.path.join(self.resDir, "input")
 
         head = os.path.split(inspect.stack()[1].filename)[0]
         self.castorShareDir = os.path.join(os.path.abspath(head), "share")
@@ -212,22 +211,17 @@ class Study:
                 futures = list(
                     map(lambda job: executor.submit(runJob, job), self.jobList)
                 )
-                # while not all([future.done() for future in futures]):
-                #    printStatus(self)
-                #    time.sleep(.1)
-                # executor.shutdown(wait=True, cancel_futures=True)
 
-                # try:
-                #    pass
-                # except KeyboardInterrupt:
-                #    print("Elooo!")
-                #    for future in futures:
-                #        future.cancel()
-
-                for future in as_completed(futures):
-                    futureJob = future.result()
-                    self.jobList[futureJob.id] = futureJob
+                lastChange = 0.0
+                latestChange = 0.0
+                while not all([future.done() for future in futures]):
+                    for job in self.jobList:
+                        latestChange = max(latestChange, os.path.getmtime(job.staFile))
+                    if latestChange > lastChange:
+                        lastChange = latestChange
+                        printStatus(self)
                     time.sleep(0.1)
+                else:
                     printStatus(self)
 
         else:
