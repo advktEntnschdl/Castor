@@ -64,8 +64,8 @@ class Study:
                     )
                 )
 
-        os.mkdir(self.resDir)
-        os.mkdir(self.shareDir)
+        os.makedirs(self.resDir)
+        os.makedirs(self.shareDir)
         self.getProvidedFiles()
 
         self.generateJobListFromConfig()
@@ -226,6 +226,7 @@ class Study:
 
         else:
             for result in map(runJob, self.jobList):
+
                 printStatus(self)
                 pass
 
@@ -236,6 +237,7 @@ class Study:
     def getProvidedFiles(self):
         for file in self.providedFiles:
             file = os.path.expanduser(file)
+            file = file.rstrip("/")
             if not os.path.exists(file):
                 errorMessage('File "{}" not found'.format(file))
                 raise FileNotFoundError
@@ -271,6 +273,9 @@ class Study:
             jobList.append(Job(self, replaceDef, id))
             id += 1
         self.jobList = jobList
+
+        if not len(jobList) > 0:
+            raise IOError("Job list is empty. Check input!")
 
         return
 
@@ -309,7 +314,7 @@ class Study:
         return replaceDefsPerJob
 
     def export(self):
-        os.mkdir(self.expDir)
+        os.makedirs(self.expDir)
 
         exportName = "jobNames.pickle"
         jobNames = [job.name for job in self.jobList]
