@@ -143,10 +143,6 @@ def getReplaceDictList(paramDict):
     )
 
     for valGroup in groupedVals:
-        auxList = [None] * (len(params) * 2)
-        auxList[1::2] = [str(item) for item in valGroup]  # type: ignore <- pyright does not like slices of type None lists
-        auxList[::2] = [item.replace("_", "") for item in params]  # type: ignore
-
         replaceDictList.append(dict(zip(params, valGroup)))
 
     return replaceDictList
