@@ -140,10 +140,8 @@ def generateGroupedVals(paramDict):
     return list(itertools.product(*(toList(paramDict[key]) for key in paramDict)))
 
 
-def getReplaceDictList(paramDict):
-    replaceDictList = []
-
-    params = paramDict.keys()
+def getReplaceDictList(paramDict_):
+    paramDict = paramDict_.copy()
 
     additionalParamDict = {}
     for param, vals in paramDict.items():
@@ -176,8 +174,8 @@ def getReplaceDictList(paramDict):
             tempDict[key] = val
             groupedVals.extend(generateGroupedVals(tempDict))
 
-    for valGroup in groupedVals:
-        replaceDictList.append(dict(zip(params, valGroup)))
+    params = paramDict.keys()
+    replaceDictList = [dict(zip(params, valGroup)) for valGroup in groupedVals]
 
     return replaceDictList
 
