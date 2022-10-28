@@ -5,6 +5,8 @@ import subprocess
 import time
 from datetime import datetime
 
+import numpy as np
+
 from .utils import toList
 
 
@@ -134,13 +136,45 @@ def replaceInFile(filename, replacedict):
     return
 
 
+def generateGroupedVals(paramDict):
+    return list(itertools.product(*(toList(paramDict[key]) for key in paramDict)))
+
+
 def getReplaceDictList(paramDict):
     replaceDictList = []
 
     params = paramDict.keys()
-    groupedVals = list(
-        itertools.product(*(toList(paramDict[key]) for key in paramDict))
-    )
+
+    additionalParamDict = {}
+    for param, vals in paramDict.items():
+        valList = toList(vals)
+        sequenceInVals = [
+            isinstance(item, (list, tuple, np.ndarray)) for item in valList
+        ]
+        scalarInVals = [np.isscalar(item) for item in valList]
+
+        if not any(sequenceInVals):
+            # default case
+            pass
+
+        elif any(scalarInVals) and len(valList) == 2:
+            # one scalar and one sequence in valList
+            idxSequence = np.argmax(sequenceInVals)
+            idxScalar = 1 - idxSequence
+
+            additionalParamDict[param] = valList[idxSequence]
+            paramDict[param] = valList[idxScalar]
+
+        else:
+            Exception("Error in specified replace instructions. Check your input!")
+
+    groupedVals = generateGroupedVals(paramDict)
+
+    if additionalParamDict:
+        for key, val in additionalParamDict.items():
+            tempDict = paramDict.copy()
+            tempDict[key] = val
+            groupedVals.extend(generateGroupedVals(tempDict))
 
     for valGroup in groupedVals:
         replaceDictList.append(dict(zip(params, valGroup)))
