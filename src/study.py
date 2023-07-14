@@ -9,7 +9,7 @@ from difflib import get_close_matches
 
 import dill as pickle
 
-from .job import Job, getReplaceDictList
+from .job import Job, getParamStr, getReplaceDictList
 from .journal import errorMessage, infoMessage, message, printStatus
 from .utils import listFiles, toList
 
@@ -28,6 +28,7 @@ class Study:
         self.simConfig = studyDict["simConfig"]
 
         self.replaceInstructions = studyDict["replaceInstructions"]
+        self.reuseReplaceInstructions = studyDict.get("reuseReplaceInstructions")
 
         self.providedFiles = toList(studyDict["providedFiles"])
         self.shareDir = os.path.join(self.resDir, "share")
@@ -66,6 +67,8 @@ class Study:
 
         os.makedirs(self.resDir)
         os.makedirs(self.shareDir)
+        os.makedirs(self.expDir)
+
         self.getProvidedFiles()
 
         self.generateJobListFromConfig()
@@ -265,13 +268,13 @@ class Study:
         return
 
     def generateJobListFromConfig(self):
-        replaceDefsPerJob = self.getReplaceDefsPerJob()
+        replaceDefsPerJob, jobNames = self.getReplaceDefsPerJob()
 
         jobList = []
-        id = 0
-        for replaceDef in replaceDefsPerJob:
-            jobList.append(Job(self, replaceDef, id))
-            id += 1
+        jId = 0
+        for replaceDef, jobName in zip(replaceDefsPerJob, jobNames):
+            jobList.append(Job(self, jobName, jId, replaceDef))
+            jId += 1
         self.jobList = jobList
 
         if not len(jobList) > 0:
@@ -289,11 +292,14 @@ class Study:
             replaceDefsPerFile.append(
                 [
                     (templateFile, replaceDict)
-                    for replaceDict in getReplaceDictList(independentParamDict)
+                    for replaceDict in getReplaceDictList(
+                        independentParamDict, self.expDir
+                    )
                 ]
             )
 
         replaceDefsPerJob = list(itertools.product(*replaceDefsPerFile))
+        jobNames = [getParamStr(replaceDef) for replaceDef in replaceDefsPerJob]
 
         for replaceDef in replaceDefsPerJob:
             for templateFile, replaceDict in replaceDef:
@@ -311,11 +317,21 @@ class Study:
                         finally:
                             pass
 
-        return replaceDefsPerJob
+        # not the yellow from the egg
+        if self.reuseReplaceInstructions:
+            newReplaceDefsPerJob = []
+            for reusewhat, reusefor in self.reuseReplaceInstructions.items():
+                for replaceDefs in replaceDefsPerJob:
+                    replaceDefs = list(replaceDefs)
+                    for replaceDef in replaceDefs:
+                        if replaceDef[0] == reusewhat:
+                            replaceDefs.append((reusefor, replaceDef[1]))
+                    newReplaceDefsPerJob.append(replaceDefs)
+            replaceDefsPerJob = tuple(newReplaceDefsPerJob)
+
+        return replaceDefsPerJob, jobNames
 
     def export(self):
-        os.makedirs(self.expDir)
-
         exportName = "jobNames.pickle"
         jobNames = [job.name for job in self.jobList]
         with open(os.path.join(self.expDir, "jobNames.pickle"), "wb") as fout:

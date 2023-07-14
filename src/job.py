@@ -11,16 +11,18 @@ from .utils import toList
 
 
 class Job:
-    def __init__(self, study, replaceDef, jobId):
-        self.name = getParamStr(replaceDef)
-        self.id = jobId
+    def __init__(self, study, name, jId, replaceDef):
+        self.name = name
+        self.id = jId
 
         self.resDir = os.path.join(study.resDir, self.name)
         self.studyShareDir = study.shareDir
         self.shareDir = os.path.join(self.resDir, "share")
         self.castorShareDir = study.castorShareDir
+        self.expDir = study.expDir
 
         self.replaceDef = replaceDef
+
         self.type = study.type
         self.simConfig = study.simConfig
         self.studyResDir = study.resDir
@@ -56,7 +58,6 @@ class Job:
         return
 
     def generateInputFromTemplates(self):
-
         for file, replaceDict in self.replaceDef:
             filePath = os.path.join(self.shareDir, file)
             replaceInFile(filePath, replaceDict)
@@ -140,7 +141,7 @@ def generateGroupedVals(paramDict):
     return list(itertools.product(*(toList(paramDict[key]) for key in paramDict)))
 
 
-def getReplaceDictList(paramDict_):
+def getReplaceDictList(paramDict_, expDir=""):
     paramDict = paramDict_.copy()
 
     additionalParamDict = {}
@@ -167,15 +168,29 @@ def getReplaceDictList(paramDict_):
             Exception("Error in specified replace instructions. Check your input!")
 
     groupedVals = generateGroupedVals(paramDict)
+    params = paramDict.keys()
+    replaceDictList = [dict(zip(params, valGroup)) for valGroup in groupedVals]
 
     if additionalParamDict:
+        with open(os.path.join(expDir, "INITIAL_Jobs.txt"), "a+") as f:
+            for replaceDict in replaceDictList:
+                f.write(getParamStr([[[], replaceDict]]) + "\n")
+
         for key, val in additionalParamDict.items():
             tempDict = paramDict.copy()
             tempDict[key] = val
-            groupedVals.extend(generateGroupedVals(tempDict))
+            additionalGroupedVals = generateGroupedVals(tempDict)
+            additionalReplaceDicts = [
+                dict(zip(params, valGroup)) for valGroup in additionalGroupedVals
+            ]
 
-    params = paramDict.keys()
-    replaceDictList = [dict(zip(params, valGroup)) for valGroup in groupedVals]
+            with open(
+                os.path.join(expDir, "{}_Jobs.txt".format(key.replace("_", ""))), "a+"
+            ) as f:
+                for replaceDict in additionalReplaceDicts:
+                    f.write(getParamStr([[[], replaceDict]]) + "\n")
+
+            replaceDictList.extend(additionalReplaceDicts)
 
     return replaceDictList
 
