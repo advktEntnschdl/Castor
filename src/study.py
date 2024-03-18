@@ -114,7 +114,7 @@ class Study:
     def checkValues(self, studyDict):
         raiseError = False
 
-        possibleTypes = ["EdelweissFE", "mpFEM"]
+        possibleTypes = ["EdelweissFE", "mpFEM", "Abaqus"]
         if studyDict["type"] not in possibleTypes:
             errorMessage(
                 'Type "{}" not a valid study type. Valid study types: {}'.format(
@@ -172,17 +172,8 @@ class Study:
                 raiseError = True
 
         if studyDict["type"] == "EdelweissFE":
-            executable = studyDict["simConfig"]["executable"]
-            executable = os.path.expanduser(executable)
-
             inputFile = studyDict["simConfig"]["inputFile"]
 
-            if not os.path.exists(executable):
-                print(os.path.exists(executable))
-                errorMessage(
-                    "EdelweissFE executable not found at {}.".format(executable)
-                )
-                raise FileNotFoundError
             if inputFile not in providedFilesList:
                 errorMessage(
                     "EdelweissFE input file {} needs to be provided.".format(inputFile)

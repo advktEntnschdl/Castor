@@ -77,7 +77,6 @@ class Job:
             if self.simConfig["numThreads"]:
                 envVars.update({"OMP_NUM_THREADS": str(self.simConfig["numThreads"])})
             args = [
-                "python",
                 self.simConfig["executable"],
                 inputFile,
                 "--noplot",
