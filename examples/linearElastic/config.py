@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 # from datetime import datetime
 
 
-matplotlib.style.use("seaborn-colorblind")
+# matplotlib.style.use("seaborn-colorblind")
 
 
 def makeJobPlot(job):
@@ -92,7 +92,7 @@ config = {
             "name": studyName,
             "type": "EdelweissFE",
             "simConfig": {
-                "executable": "~/projects/EdelweissFE/edelweiss.py",
+                "executable": "edelweissfe",
                 "inputFile": inputTemplate,
                 "numThreads": 1,
             },
