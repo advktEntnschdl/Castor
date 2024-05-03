@@ -1,12 +1,8 @@
 import os
 
-import matplotlib
-import matplotlib.style
 import numpy as np
 import PyPDF4
 from matplotlib import pyplot as plt
-
-matplotlib.style.use("seaborn-colorblind")
 
 
 def makeJobPlot(job):
