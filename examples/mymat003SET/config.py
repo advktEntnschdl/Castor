@@ -1,8 +1,6 @@
 import os
 import subprocess
 
-import matplotlib
-import matplotlib.style
 import numpy as np
 import PyPDF4
 from getLayout import getLayout
@@ -14,7 +12,7 @@ from matplotlib import rcParams
 paper = (5.875, 4.125)  # size in inches
 # paperA4 = (5.875, 4.125) # size in inches
 
-matplotlib.style.use("seaborn-colorblind")
+# matplotlib.style.use("seaborn-colorblind")
 rcParams["font.family"] = ["monospace"]
 rcParams["font.monospace"] = ["FreeMono"]
 
@@ -224,7 +222,7 @@ config = {
             "name": studyName,
             "type": "EdelweissFE",
             "simConfig": {
-                "executable": "~/projects/EdelweissFE/edelweiss.py",
+                "executable": "edelweissfe",
                 "inputFile": inputTemplate,
                 "numThreads": 1,
             },

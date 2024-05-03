@@ -1,68 +1,84 @@
-*material, name=MYMAT003,       id=mat
-**  lambda,   kappa,    nu,       MCSL      e_0,      pc_0
-    .14,      .03,      .3,       1.2,      1.1,      200.,
-**  GcToG     lb        lt        polarR
-    0.1,      5.,       10.,      1.4999999,
-**  a1        a2        a3        a4        lJ2       l
-    0.5,      0.0,      0.5,      0.0,      5.0,      10.
+*job, name=triax, domain=3d
 
-*job, name=triax, domain=3d, solver=NISTParallel
+*solver, solver=NISTParallel, name=theSolver
 
 *modelGenerator, generator=boxGen, name=gen
 elType  =CC3D8
 
+*material, name=MYMAT003,       id=mat
+**  [0] lambda
+0.1,
+**  [1] kappa
+ 0.01,
+**  [2] nu
+0.3,
+**  [3] M
+1.0,
+**  [4] GcToG
+0.01,
+**  [5] lb
+2.0,
+**  [6] lt
+4.0,
+**  [7] polarRatio
+1.49999,
+**  [8] a1
+0.5,
+**  [9] a2
+0.0,
+** [10] a3
+0.5,
+** [11] a4
+0.0,
+** [12] lJ2
+1.0,
+
 *section, name=section1, material=mat, type=solid
 all
 
-*fieldOutput,
-name=displacement,  elSet=all,           field=displacement,   result=U
-name=nodeforces,    elSet=all,           field=displacement,   result=P
-name=rotations,     elSet=all,           field=micro rotation, result=U
-name=nonLocal,      elSet=all,           field=nonlocal damage,result=U
+*step, solver=theSolver, maxInc=5e-1, minInc=1e-3, maxNumInc=1000, maxIter=25, stepLength=1
+setfield, name=eIni,  fieldOutput=eQP,  type=uniform, value=1.1
+setfield, name=pcIni, fieldOutput=pcQP, type=uniform, value=200
 
-name=U,             nSet=gen_top,         field=displacement, result=U, f(x)='mean(x[:,1])',  saveHistory=true, export=U
-name=RF1,           nSet=gen_bottom,      field=displacement, result=P, f(x)='sum(x[:,0])',   saveHistory=true
-name=RF2,           nSet=gen_bottom,      field=displacement, result=P, f(x)='sum(x[:,1])',   saveHistory=true, export=RF
+geostatic, name=p, elSet=all, p1=-_PINI_, h1=1., p2=-_PINI_, h2=0., xLateral=1.0, zLateral=1.0
 
-name=stress,        elSet=all,  result=stress,  quadraturePoint=0:3,  f(x)='np.mean(x,axis=1)'
-name=strain,        elSet=all,  result=strain,  quadraturePoint=0:3,  f(x)='np.mean(x,axis=1)'
+dirichlet, name=D001, nSet=gen_left,   field=displacement, 1=0.
+dirichlet, name=D002, nSet=gen_bottom, field=displacement, 2=0.
+dirichlet, name=D003, nSet=gen_back,   field=displacement, 3=0.
 
-name=p,             elSet=all,  result=p,       quadraturePoint=0:3,  f(x)='max( x[:,:], axis=1)',
-name=q,             elSet=all,  result=q,       quadraturePoint=0:3,  f(x)='max( x[:,:], axis=1)',
-name=e,             elSet=all,  result=e,       quadraturePoint=0:3,  f(x)='mean( x[:,:], axis=1)',
-name=pc,            elSet=all,  result=pc,      quadraturePoint=0:3,  f(x)='max( x[:,:], axis=1)',
-name=f,             elSet=all,  result=f,       quadraturePoint=0:3,  f(x)='max( x[:,:], axis=1)',
+distributedload, name=N001, surface=gen_right, magnitude=_PINI_, f(t)=1, type=pressure
+distributedload, name=N002, surface=gen_top,   magnitude=_PINI_, f(t)=1, type=pressure
+distributedload, name=N003, surface=gen_front, magnitude=_PINI_, f(t)=1, type=pressure
 
-** *output, type=meshplot, jobName=PST, name=RFPlot
-** figure=1, axSpec=111, c=k, ls=solid, create=xyData, x=time, y=RF2
+*step, solver=theSolver, maxInc=5e-02, minInc=1e-06, maxNumInc=1000000, maxIter=25, stepLength=1
+dirichlet, name=D004, nSet=gen_top, field=displacement, 2=-5e-2
 
-*output, type=ensight, jobName=triax, name=esExport
-create=perNode,     fieldOutput=displacement 
-create=perNode,     fieldOutput=nodeforces
-create=perNode,     fieldOutput=rotations
-create=perNode,     fieldOutput=nonLocal
-create=perElement,  fieldOutput=stress
-create=perElement,  fieldOutput=strain
-create=perElement,  fieldOutput=p
-create=perElement,  fieldOutput=q
-create=perElement,  fieldOutput=e
-create=perElement,  fieldOutput=pc
-create=perElement,  fieldOutput=f
+*fieldOutput
+create=perNode, name=displacement, elSet=all, field=displacement,   result=U
+create=perNode, name=nodeforces,   elSet=all, field=displacement,   result=P
+create=perNode, name=rotations,    elSet=all, field=micro rotation, result=U
+
+create=perNode, name=U,   nSet=gen_top,    field=displacement, result=U, f(x)='mean(x[:,1])', saveHistory=true, export=U
+create=perNode, name=RF1, nSet=gen_bottom, field=displacement, result=P, f(x)='sum(x[:,0])',  saveHistory=true
+create=perNode, name=RF2, nSet=gen_bottom, field=displacement, result=P, f(x)='sum(x[:,1])',  saveHistory=true, export=RF
+
+create=perElement, name=stress, elSet=all, result=stress, quadraturePoint=0:8, f(x)='np.mean(x,axis=1)'
+create=perElement, name=strain, elSet=all, result=strain, quadraturePoint=0:8, f(x)='np.mean(x,axis=1)'
+
+create=perElement, name=e,  elSet=all, result=e,  quadraturePoint=0:8, f(x)='mean( x[:,:], axis=1)',
+create=perElement, name=pc, elSet=all, result=pc, quadraturePoint=0:8, f(x)='max( x[:,:], axis=1)',
+
+create=perElement, name=eQP,  elSet=all, result=e,  quadraturePoint=0:8
+create=perElement, name=pcQP, elSet=all, result=pc, quadraturePoint=0:8
+
+*output, type=ensight, name=esExport
+create=perNode,    fieldOutput=displacement 
+create=perNode,    fieldOutput=nodeforces
+create=perNode,    fieldOutput=rotations
+create=perElement, fieldOutput=stress
+create=perElement, fieldOutput=strain
+create=perElement, fieldOutput=e
+create=perElement, fieldOutput=pc
 configuration, overwrite=yes
 
-
-*step, jobName=triax, maxInc=5e-1, minInc=1e-3, maxNumInc=1000, maxIter=25, stepLength=1
-initializematerial, name=init,    elSet=all 
-geostatic,          name=p,       elSet=all, p1=-_PINI_, h1=1., p2=-_PINI_, h2=0., xLateral=1.0, zLateral=1.0
-
-dirichlet,          name=001, nSet=gen_left,      field=displacement,   1=0.
-dirichlet,          name=002, nSet=gen_bottom,    field=displacement,   2=0.
-dirichlet,          name=003, nSet=gen_back,      field=displacement,   3=0.
-
-distributedload,    name=001, surface=gen_right,  magnitude=_PINI_, f(t)=1, type=pressure
-distributedload,    name=002, surface=gen_top,    magnitude=_PINI_, f(t)=1, type=pressure
-distributedload,    name=003, surface=gen_front,  magnitude=_PINI_, f(t)=1, type=pressure
-
-*step, jobName=triax, maxInc=5e-02, minInc=1e-06, maxNumInc=1000000, maxIter=25, stepLength=1
-dirichlet,          name=004, nSet=gen_top,       field=displacement,   2=-5e-2
 

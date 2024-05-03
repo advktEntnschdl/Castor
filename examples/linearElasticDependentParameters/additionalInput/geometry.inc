@@ -7,6 +7,3 @@ nY      = _nH_
 nZ      = 1
 elType  = C3D20R
 
-*section, name=section1, material=mat, type=solid
-all
-

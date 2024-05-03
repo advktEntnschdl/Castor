@@ -124,9 +124,8 @@ class Study:
             )
             raiseError = True
 
-        if (
-            not studyDict["replaceInstructions"]
-            or not type(studyDict["replaceInstructions"]) == dict
+        if not studyDict["replaceInstructions"] or not isinstance(
+            studyDict["replaceInstructions"], dict
         ):
             errorMessage(
                 'Value of "replaceInstructions" must be a dictionary with at least one key value pair: <fileName>: <parameterDictionary>.'
@@ -165,7 +164,7 @@ class Study:
                 errorMessage("Path {} is not a relative path.".format(key))
                 raiseError = True
 
-            if not val or not type(val) == dict:
+            if not val or not isinstance(val, dict):
                 errorMessage(
                     "Replace instruction must be a dictionary with at least one key value pair: <parameter>: <value or valueList>."
                 )
