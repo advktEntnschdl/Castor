@@ -222,7 +222,7 @@ config = {
             "name": studyName,
             "type": "EdelweissFE",
             "simConfig": {
-                "executable": "~/projects/EdelweissFE/edelweiss.py",
+                "executable": "edelweissfe",
                 "inputFile": inputTemplate,
                 "numThreads": 1,
             },

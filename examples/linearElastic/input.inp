@@ -1,4 +1,6 @@
-*job, name=job, domain=3d, solver=NISTParallel
+*job, name=job, domain=3d
+
+*solver, solver=NISTParallel, name=theSolver
 
 *modelGenerator, generator=boxGen, name=gen
 lX      = 50
@@ -18,7 +20,7 @@ _Nu_
 *section, name=section1, material=mat, type=solid
 all
 
-*step, maxInc=1, minInc=1, maxNumInc=1, maxIter=25, stepLength=1
+*step, solver=theSolver, maxInc=1, minInc=1, maxNumInc=1, maxIter=25, stepLength=1
 dirichlet, name=001, nSet=gen_bottom, field=displacement, 1=0, 2=0.
 dirichlet, name=002, nSet=gen_left,   field=displacement, 1=0.
 dirichlet, name=003, nSet=gen_back,   field=displacement, 3=0.
