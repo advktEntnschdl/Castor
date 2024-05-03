@@ -2,7 +2,7 @@ import os
 
 
 def toList(arg):
-    if type(arg) == list:
+    if isinstance(arg, list):
         return arg
     else:
         return [arg]

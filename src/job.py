@@ -30,7 +30,7 @@ class Job:
 
         ppFuns = study.postProcessingInstructions.get("afterJob")
         if ppFuns:
-            if type(ppFuns) == list:
+            if isinstance(ppFuns, list):
                 self.ppFunList = ppFuns
             else:
                 self.ppFunList = [ppFuns]
