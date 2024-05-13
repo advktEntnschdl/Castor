@@ -11,8 +11,9 @@ from .utils import toList
 
 
 class Job:
-    def __init__(self, study, name, jId, replaceDef):
+    def __init__(self, study, name, paramDict, jId, replaceDef):
         self.name = name
+        self.paramDict = paramDict
         self.id = jId
 
         self.resDir = os.path.join(study.resDir, self.name)
@@ -202,3 +203,11 @@ def getParamStr(replaceDefsPerJob):
     paramStr = "_".join(auxList)
 
     return paramStr
+
+
+def getParamDict(replaceDefsPerJob):
+    paramDict = {}
+    for file, definition in replaceDefsPerJob:
+        paramDict.update(definition)
+
+    return paramDict

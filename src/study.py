@@ -9,7 +9,7 @@ from difflib import get_close_matches
 
 import dill as pickle
 
-from .job import Job, getParamStr, getReplaceDictList
+from .job import Job, getParamDict, getParamStr, getReplaceDictList
 from .journal import errorMessage, infoMessage, message, printStatus
 from .utils import listFiles, toList
 
@@ -258,12 +258,15 @@ class Study:
         return
 
     def generateJobListFromConfig(self):
-        replaceDefsPerJob, jobNames = self.getReplaceDefsPerJob()
+        replaceDefsPerJob, jobNames, paramDicts = self.getReplaceDefsPerJob()
+        # breakpoint()
 
         jobList = []
         jId = 0
-        for replaceDef, jobName in zip(replaceDefsPerJob, jobNames):
-            jobList.append(Job(self, jobName, jId, replaceDef))
+        for replaceDef, jobName, paramDict in zip(
+            replaceDefsPerJob, jobNames, paramDicts
+        ):
+            jobList.append(Job(self, jobName, paramDict, jId, replaceDef))
             jId += 1
         self.jobList = jobList
 
@@ -290,6 +293,7 @@ class Study:
 
         replaceDefsPerJob = list(itertools.product(*replaceDefsPerFile))
         jobNames = [getParamStr(replaceDef) for replaceDef in replaceDefsPerJob]
+        jobDicts = [getParamDict(replaceDef) for replaceDef in replaceDefsPerJob]
 
         for replaceDef in replaceDefsPerJob:
             for templateFile, replaceDict in replaceDef:
@@ -319,12 +323,24 @@ class Study:
                     newReplaceDefsPerJob.append(replaceDefs)
             replaceDefsPerJob = tuple(newReplaceDefsPerJob)
 
-        return replaceDefsPerJob, jobNames
+        return replaceDefsPerJob, jobNames, jobDicts
 
     def export(self):
         exportName = "jobNames.pickle"
         jobNames = [job.name for job in self.jobList]
         with open(os.path.join(self.expDir, "jobNames.pickle"), "wb") as fout:
+            pickle.dump(jobNames, fout)
+
+        exportName = "jobs.pickle"
+        jobNames = [
+            dict(
+                name=job.name,
+                parameters=job.paramDict,
+                resultDir=os.path.relpath(job.resDir, os.path.dirname(self.resDir)),
+            )
+            for job in self.jobList
+        ]
+        with open(os.path.join(self.expDir, "jobs.pickle"), "wb") as fout:
             pickle.dump(jobNames, fout)
 
         exportName = "study.pickle"
