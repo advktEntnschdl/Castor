@@ -328,11 +328,11 @@ class Study:
     def export(self):
         exportName = "jobNames.pickle"
         jobNames = [job.name for job in self.jobList]
-        with open(os.path.join(self.expDir, "jobNames.pickle"), "wb") as fout:
+        with open(os.path.join(self.expDir, exportName), "wb") as fout:
             pickle.dump(jobNames, fout)
 
         exportName = "jobs.pickle"
-        jobNames = [
+        jobDicts = [
             dict(
                 name=job.name,
                 parameters=job.paramDict,
@@ -340,8 +340,8 @@ class Study:
             )
             for job in self.jobList
         ]
-        with open(os.path.join(self.expDir, "jobs.pickle"), "wb") as fout:
-            pickle.dump(jobNames, fout)
+        with open(os.path.join(self.expDir, exportName), "wb") as fout:
+            pickle.dump(jobDicts, fout)
 
         exportName = "study.pickle"
         with open(os.path.join(self.expDir, exportName), "wb") as fout:
