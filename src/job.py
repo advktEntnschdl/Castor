@@ -106,11 +106,11 @@ class Job:
                     # self.updateStatus("running")
                     time.sleep(0.1)
             except KeyboardInterrupt:
-                self.updateStatus("TERMINATED job terminated by user")
+                self.updateStatus("job terminated by user")
                 subproc.kill()
 
         if subproc.poll() >= 0:
-            self.updateStatus("SUCCESS job exited with code {}".format(subproc.poll()))
+            self.updateStatus("job exited with code {}".format(subproc.poll()))
             self.performPostProcessing()
         else:
             self.updateStatus("ERROR job exited with code {}".format(subproc.poll()))
