@@ -1,9 +1,9 @@
 import argparse
 import os
 
-from src.journal import infoMessage, message, printHeader, printSepline
-from src.reader import readConfig
-from src.study import Study
+from castor.journal import infoMessage, message, printHeader, printSepline
+from castor.reader import readConfig
+from castor.study import Study
 
 
 def main():
