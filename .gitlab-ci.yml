@@ -8,6 +8,6 @@ linting:
     - pip install git+https://github.com/psf/black
     - pip install isort
     - pip install flake8
-    - black --check src castor.py
-    - isort src castor.py --check-only
-    - flake8 src castor.py --ignore E501,F723,W503
+    - black --check castor
+    - isort castor --check-only
+    - flake8 castor --ignore E501,F723,W503
