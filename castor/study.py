@@ -335,7 +335,7 @@ class Study:
         with open(os.path.join(self.expDir, exportName), "wb") as fout:
             pickle.dump(self.jobList, fout)
 
-        exportName = "jobsDict.pickle"
+        exportName = "jobDicts.pickle"
         jobDicts = [
             dict(
                 name=job.name,
