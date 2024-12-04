@@ -1,11 +1,18 @@
 # Castor
 
-A python tool for performing parameter studies.
+A handy tool for performing parametric studies.
+
+## installation
+
+```bash
+  cd <castor project directory>
+  pip install .
+```
 
 ## General usage
 
 ```bash
-  python castor.py <pythonConfigFile> <args>
+  castor <pythonConfigFile> <args>
 ```
 
 ## Examples
@@ -14,6 +21,6 @@ A python tool for performing parameter studies.
 
 ```bash
   cd examples/LinearElastic
-  python ../../castor.py config.py --parallelJobs 10
+  castor config.py --parallelJobs 10
 ```
 
