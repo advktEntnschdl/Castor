@@ -68,7 +68,7 @@ def mergePDFs(study):
     return
 
 
-studyName = "_tensileTest"
+studyName = "_linearElastic"
 # studyName += "_"
 # studyName += datetime.now().strftime("%Y%m%dT%H%M")
 
