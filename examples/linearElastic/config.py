@@ -61,7 +61,6 @@ def mergePDFs(study):
     args = ["pdftk"] + files + ["output", "{}.pdf".format(study.name)]
     os.system(" ".join(args))
     os.remove(os.path.join(study.resDir, "plot.pdf"))
-
     return
 
 
