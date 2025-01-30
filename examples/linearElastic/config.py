@@ -1,7 +1,6 @@
 import os
 
 import numpy as np
-import PyPDF4
 from matplotlib import pyplot as plt
 
 
@@ -54,17 +53,15 @@ def makeStudyPlot(study):
 
 
 def mergePDFs(study):
-    mergedPdf = PyPDF4.PdfFileMerger()
-
-    mergedPdf.append(os.path.join(study.resDir, "plot.pdf"))
-    mergedPdf.addBookmark(study.name, len(mergedPdf.pages) - 1)
-
+    files = []
+    files.append(os.path.join(study.resDir, "plot.pdf"))
     for job in study.jobList:
-        mergedPdf.append(os.path.join(job.resDir, "{}.pdf".format(job.name)))
-        mergedPdf.addBookmark(job.name, len(mergedPdf.pages) - 1)
+        files.append(os.path.join(job.resDir, "{}.pdf".format(job.name)))
 
-    mergedPdf.write("{}.pdf".format(study.name))
+    args = ["pdftk"] + files + ["output", "{}.pdf".format(study.name)]
+    os.system(" ".join(args))
     os.remove(os.path.join(study.resDir, "plot.pdf"))
+
     return
 
 
