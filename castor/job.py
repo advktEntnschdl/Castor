@@ -96,6 +96,15 @@ class Job:
                 "-o=result",
             ]
 
+        elif self.type == "bash":
+            inputFile = os.path.join(
+                self.shareDir, os.path.basename(self.simConfig["inputFile"])
+            )
+            args = [
+                self.simConfig["command"],
+                inputFile,
+            ]
+
         cmd = " ".join(args)
         with open("stderr.txt", "w+") as fErr, open("stdout.txt", "w+") as fOut:
             subproc = subprocess.Popen(

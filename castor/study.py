@@ -114,7 +114,7 @@ class Study:
     def checkValues(self, studyDict):
         raiseError = False
 
-        possibleTypes = ["EdelweissFE", "mpFEM", "Abaqus"]
+        possibleTypes = ["EdelweissFE", "mpFEM", "Abaqus", "bash"]
         if studyDict["type"] not in possibleTypes:
             errorMessage(
                 'Type "{}" not a valid study type. Valid study types: {}'.format(
