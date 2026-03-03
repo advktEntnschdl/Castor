@@ -141,7 +141,7 @@ class Study:
             file = os.path.expanduser(file)
             if os.path.isdir(file):
                 fileList = listFiles(file)
-                (head, tail) = os.path.split(file)
+                head, tail = os.path.split(file)
                 fileList = [os.path.relpath(file, start=head) for file in fileList]
                 providedFilesList.extend(fileList)
             else:
