@@ -3,6 +3,7 @@ import subprocess
 
 import numpy as np
 import PyPDF4
+import pyvista as pv
 from getLayout import getLayout
 from matplotlib import pyplot as plt
 from matplotlib import rcParams
@@ -43,25 +44,50 @@ def generateJobPage(job):
     ax.set_title(job.name)
     fig.savefig(os.path.join(job.resDir, "plot.pdf"))
 
-    clrString = "POINTS displacement magnitude"
-    # clrString = "CELLS strain \\(partial\\)"
-    # clrString = "CELLS e \\(partial\\)"
+    # clrString = "POINTS displacement magnitude"
+    # # clrString = "CELLS strain \\(partial\\)"
+    # # clrString = "CELLS e \\(partial\\)"
+    #
+    # # pythonCmd = "/usr/bin/python"
+    # pythonCmd = "/home/paul/Downloads/paraview_build/bin/pvpython"
+    # args = [
+    #     pythonCmd,
+    #     "share/renderWarped3D.py",
+    #     "--case=esExport.case",
+    #     "--dpi=300",
+    #     "--width={}".format(paper[0] / 2),
+    #     "--height={}".format(paper[1]),
+    #     "--scalefactor=1.0",
+    #     "--out=contour.png",
+    #     "--colorby",
+    #     clrString,
+    # ]
+    # subprocess.run(" ".join(args), shell=True)
 
-    # pythonCmd = "/usr/bin/python"
-    pythonCmd = "/home/paul/Downloads/paraview_build/bin/pvpython"
-    args = [
-        pythonCmd,
-        "share/renderWarped3D.py",
-        "--case=esExport.case",
-        "--dpi=300",
-        "--width={}".format(paper[0] / 2),
-        "--height={}".format(paper[1]),
-        "--scalefactor=1.0",
-        "--out=contour.png",
-        "--colorby",
-        clrString,
-    ]
-    subprocess.run(" ".join(args), shell=True)
+    window_size = (1500, 1500)
+    pl = pv.Plotter(lighting=None)
+    pl.enable_lightkit()
+
+    pl.enable_anti_aliasing("msaa")
+
+    file = "esExport.case"
+    reader = pv.EnSightReader(file)
+    reader.set_active_time_set(1)
+    reader.set_active_time_point(reader.number_time_points - 1)
+
+    mesh = reader.read()["all"]
+
+    pl.add_mesh(mesh.warp_by_vector(), scalars="displacement")
+
+    pl.off_screen = True
+    pl.ren_win.OffScreenRenderingOn()
+
+    outDir = "./."
+    pl.screenshot(
+        filename=os.path.join(outDir, "contour.png"),
+        transparent_background=True,
+        window_size=window_size,
+    )
 
     args = [
         "pdfjam",
@@ -90,16 +116,16 @@ def generateJobPage(job):
     subprocess.run(" ".join(args), shell=True)
     os.remove("temp.pdf")
 
-    args = [
-        "pdftk",
-        os.path.join(job.castorShareDir, "UIBK_A4Landscape.pdf"),
-        "stamp",
-        "{}.pdf".format(job.name),
-        "output",
-        "temp.pdf",
-    ]
-    subprocess.run(" ".join(args), shell=True)
-    os.rename("temp.pdf", job.name + ".pdf")
+    # args = [
+    #     "pdftk",
+    #     os.path.join(job.castorShareDir, "UIBK_A4Landscape.pdf"),
+    #     "stamp",
+    #     "{}.pdf".format(job.name),
+    #     "output",
+    #     "temp.pdf",
+    # ]
+    # subprocess.run(" ".join(args), shell=True)
+    # os.rename("temp.pdf", job.name + ".pdf")
 
     return
 
@@ -172,16 +198,16 @@ def generateStudyPage(study):
     subprocess.run(" ".join(args), shell=True)
     os.remove("temp.pdf")
 
-    args = [
-        "pdftk",
-        os.path.join(study.castorShareDir, "UIBK_A4Landscape.pdf"),
-        "stamp",
-        "{}.pdf".format(study.name),
-        "output",
-        "temp.pdf",
-    ]
-    subprocess.run(" ".join(args), shell=True)
-    os.rename("temp.pdf", study.name + ".pdf")
+    # args = [
+    #     "pdftk",
+    #     os.path.join(study.castorShareDir, "UIBK_A4Landscape.pdf"),
+    #     "stamp",
+    #     "{}.pdf".format(study.name),
+    #     "output",
+    #     "temp.pdf",
+    # ]
+    # subprocess.run(" ".join(args), shell=True)
+    # os.rename("temp.pdf", study.name + ".pdf")
 
     os.remove("plot.pdf")
     os.remove("contour.pdf")
