@@ -1,13 +1,12 @@
 import itertools
 import os
-import shutil
 import subprocess
 import time
 from datetime import datetime
 
 import numpy as np
 
-from .utils import toList
+from .utils import provideTree, toList
 
 
 class Job:
@@ -23,6 +22,7 @@ class Job:
         self.expDir = study.expDir
 
         self.replaceDef = replaceDef
+        self.templateFiles = study.templateFiles
 
         self.type = study.type
         self.simConfig = study.simConfig
@@ -39,7 +39,14 @@ class Job:
             self.ppFunList = []
 
         os.mkdir(self.resDir)
-        shutil.copytree(self.studyShareDir, self.shareDir)
+        # link what the study marked for linking, copy the rest
+        provideTree(
+            self.studyShareDir,
+            self.shareDir,
+            link=study.linkToJob,
+            relative=True,
+            copyFiles=self.templateFiles,
+        )
         self.generateInputFromTemplates()
         self.updateStatus("pending")
 
@@ -139,6 +146,10 @@ def replaceInFile(filename, replacedict):
         content = file.read()
         for param in replacedict:
             content = content.replace(param, str(replacedict[param]))
+
+    # never write through a link; this would modify the provided file
+    if os.path.islink(filename):
+        os.remove(filename)
 
     with open(filename, "w") as file:
         file.write(content)

@@ -84,6 +84,7 @@ config = {
             },
             "resDir": studyName,
             "providedFiles": [inputTemplate, "additionalInput"],
+            # "linkProvidedFiles": ["additionalInput"],  # link instead of copy
             "replaceInstructions": {
                 inputTemplate: {"_E_": [190000, 210000], "_Nu_": [0.3]},
                 "additionalInput/geometry.inc": {

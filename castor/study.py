@@ -11,7 +11,11 @@ import dill as pickle
 
 from .job import Job, getParamDict, getParamStr, getReplaceDictList
 from .journal import errorMessage, infoMessage, message, printStatus
-from .utils import listFiles, toList
+from .utils import listFiles, provideFile, provideTree, toList
+
+
+def normalizePath(path):
+    return os.path.expanduser(str(path)).rstrip("/")
 
 
 class Study:
@@ -30,7 +34,20 @@ class Study:
         self.replaceInstructions = studyDict["replaceInstructions"]
         self.reuseReplaceInstructions = studyDict.get("reuseReplaceInstructions")
 
+        # filled in per job; never linked
+        self.templateFiles = list(self.replaceInstructions.keys())
+        if self.reuseReplaceInstructions:
+            self.templateFiles += list(self.reuseReplaceInstructions.values())
+
         self.providedFiles = toList(studyDict["providedFiles"])
+        self.linkProvidedFiles = [
+            normalizePath(file)
+            for file in toList(studyDict.get("linkProvidedFiles", []))
+        ]
+        # paths in share/ the jobs link instead of copying
+        self.linkedShareFiles = [
+            os.path.basename(file) for file in self.linkProvidedFiles
+        ]
         self.shareDir = os.path.join(self.resDir, "share")
         self.expDir = os.path.join(self.resDir, "export")
 
@@ -152,6 +169,22 @@ class Study:
                 errorMessage("Provided {} {} not found.".format(fileType, file))
                 raise FileNotFoundError
 
+        linkProvidedFiles = studyDict.get("linkProvidedFiles", [])
+        if not isinstance(linkProvidedFiles, (str, list)):
+            errorMessage(
+                'Value of "linkProvidedFiles" must be a provided file or a list of provided files.'
+            )
+            raiseError = True
+        else:
+            providedFiles = [
+                normalizePath(file) for file in toList(studyDict["providedFiles"])
+            ]
+            for file in toList(linkProvidedFiles):
+                if normalizePath(file) not in providedFiles:
+                    infoMessage("Only provided files can be linked to a study.")
+                    errorMessage("File {} needs to be provided.".format(file))
+                    raiseError = True
+
         for file in studyDict["replaceInstructions"]:
             if file not in providedFilesList:
                 infoMessage("Template files must be provided to the study.")
@@ -227,21 +260,32 @@ class Study:
 
         return
 
+    def linkFile(self, file):
+        return normalizePath(file) in self.linkProvidedFiles
+
+    # jobs link everything in share/ that belongs to a linked provided file
+    def linkToJob(self, file):
+        return any(
+            file == linkFile or file.startswith(linkFile + os.sep)
+            for linkFile in self.linkedShareFiles
+        )
+
+    # provided files are always copied to share/, which keeps the study
+    # self-contained; only the jobs link to them
     def getProvidedFiles(self):
         for file in self.providedFiles:
-            file = os.path.expanduser(file)
-            file = file.rstrip("/")
+            note = " (linked to jobs)" if self.linkFile(file) else ""
+            file = normalizePath(file)
             if not os.path.exists(file):
                 errorMessage('File "{}" not found'.format(file))
                 raise FileNotFoundError
+            dst = os.path.join(self.shareDir, os.path.basename(file))
             if os.path.isdir(file):
-                infoMessage("Providing folder {}".format(file))
-                shutil.copytree(
-                    file, os.path.join(self.shareDir, os.path.basename(file))
-                )
+                infoMessage("Providing folder {}{}".format(file, note))
+                provideTree(file, dst)
             else:
-                infoMessage("Providing file {}".format(file))
-                shutil.copy(file, os.path.join(self.shareDir, os.path.basename(file)))
+                infoMessage("Providing file {}{}".format(file, note))
+                provideFile(file, dst)
 
         return
 

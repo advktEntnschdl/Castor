@@ -1,0 +1,3 @@
+** the mesh is read from share/mesh, which the jobs link instead of copying
+E  = _E_
+Nu = _Nu_
