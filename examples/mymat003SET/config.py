@@ -2,11 +2,11 @@ import os
 import subprocess
 
 import numpy as np
-import PyPDF4
 import pyvista as pv
 from getLayout import getLayout
 from matplotlib import pyplot as plt
 from matplotlib import rcParams
+from pypdf import PdfWriter
 
 # from datetime import datetime
 
@@ -18,7 +18,6 @@ rcParams["font.family"] = ["monospace"]
 rcParams["font.monospace"] = ["FreeMono"]
 
 
-mergedPdf = PyPDF4.PdfFileMerger()
 # ---------------------------------------
 
 
@@ -216,14 +215,14 @@ def generateStudyPage(study):
 
 
 def mergePDFs(study):
-    mergedPdf = PyPDF4.PdfFileMerger()
+    mergedPdf = PdfWriter()
 
     mergedPdf.append(os.path.join(study.resDir, "{}.pdf".format(study.name)))
-    mergedPdf.addBookmark(study.name, len(mergedPdf.pages) - 1)
+    mergedPdf.add_outline_item(study.name, len(mergedPdf.pages) - 1)
 
     for job in study.jobList:
         mergedPdf.append(os.path.join(job.resDir, "{}.pdf".format(job.name)))
-        mergedPdf.addBookmark(job.name, len(mergedPdf.pages) - 1)
+        mergedPdf.add_outline_item(job.name, len(mergedPdf.pages) - 1)
 
     os.remove(os.path.join(study.resDir, "{}.pdf".format(study.name)))
     mergedPdf.write("{}.pdf".format(studyName))

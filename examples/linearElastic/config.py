@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
+from pypdf import PdfWriter
 
 
 def makeJobPlot(job):
@@ -53,13 +54,16 @@ def makeStudyPlot(study):
 
 
 def mergePDFs(study):
-    files = []
-    files.append(os.path.join(study.resDir, "plot.pdf"))
-    for job in study.jobList:
-        files.append(os.path.join(job.resDir, "{}.pdf".format(job.name)))
+    mergedPdf = PdfWriter()
 
-    args = ["pdftk"] + files + ["output", "{}.pdf".format(study.name)]
-    os.system(" ".join(args))
+    mergedPdf.append(os.path.join(study.resDir, "plot.pdf"))
+    mergedPdf.add_outline_item(study.name, len(mergedPdf.pages) - 1)
+
+    for job in study.jobList:
+        mergedPdf.append(os.path.join(job.resDir, "{}.pdf".format(job.name)))
+        mergedPdf.add_outline_item(job.name, len(mergedPdf.pages) - 1)
+
+    mergedPdf.write("{}.pdf".format(study.name))
     os.remove(os.path.join(study.resDir, "plot.pdf"))
     return
 

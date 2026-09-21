@@ -1,4 +1,0 @@
-dill
-matplotlib
-numpy
-PyPDF4

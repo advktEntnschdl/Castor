@@ -1,4 +1,3 @@
-import inspect
 import itertools
 import operator
 import os
@@ -37,8 +36,7 @@ class Study:
         self.name = studyDict["name"]
         self.resDir = os.path.abspath(studyDict["resDir"])
 
-        head = os.path.split(inspect.stack()[1].filename)[0]
-        self.castorShareDir = os.path.join(os.path.abspath(head), "share")
+        self.castorShareDir = os.path.join(os.path.dirname(__file__), "share")
 
         self.type = studyDict["type"]
         self.simConfig = studyDict["simConfig"]
