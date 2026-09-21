@@ -18,6 +18,18 @@ def normalizePath(path):
     return os.path.expanduser(str(path)).rstrip("/")
 
 
+# restore a study that has already been set up, e.g. to only post process it
+def loadStudy(studyDict):
+    resDir = os.path.abspath(studyDict["resDir"])
+    studyFile = os.path.join(resDir, "export", "study.pickle")
+    if not os.path.exists(studyFile):
+        errorMessage("No study to load found in {}.".format(resDir))
+        raise FileNotFoundError(studyFile)
+
+    with open(studyFile, "rb") as fin:
+        return pickle.load(fin)
+
+
 class Study:
     def __init__(self, studyDict, args):
         self.checkFields(studyDict)
@@ -67,7 +79,7 @@ class Study:
         else:
             self.ppFunList = []
 
-        self.active = studyDict.get("active") if studyDict.get("active") else True
+        self.active = studyDict.get("active", True)
 
         self.checkValues(studyDict)
 

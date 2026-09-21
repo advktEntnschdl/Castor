@@ -1,10 +1,12 @@
 # from rich import print
-from os import get_terminal_size
+from shutil import get_terminal_size
 from textwrap import wrap
 
 # from rich import print
 
-maxCharCentered = get_terminal_size()[0] - 2  # 70
+# shutil.get_terminal_size falls back to 80 columns if stdout is not a
+# terminal, e.g. when the output is redirected to a log file
+maxCharCentered = get_terminal_size()[0] - 2
 maxCharAligned = maxCharCentered - 2  # 68
 
 

@@ -3,7 +3,7 @@ import os
 
 from castor.journal import infoMessage, message, printHeader, printSepline
 from castor.reader import readConfig
-from castor.study import Study
+from castor.study import Study, loadStudy
 
 
 def main():
@@ -29,22 +29,27 @@ def main():
     upmostDir = os.getcwd()
     if "parameterStudies" in config:
         for studyName, studyDict in config["parameterStudies"].items():
-            study = Study(studyDict, args)
-            if study.active:
-                # message("Study", study.name, "(active)")
-                if not args.onlyPostProcessing:
-                    study.run(args)
-                else:
-                    message(
-                        "Functions provided to study are not overwritten by design; this may be changed later."
-                    )
-                    for job in study.jobList:
-                        job.performPostProcessing()
-                    study.performPostProcessing()
-
-                os.chdir(upmostDir)
-            else:
+            # check before constructing; the constructor already sets up the
+            # result directories
+            if not studyDict.get("active", True):
                 message(" -->  " + studyName + "(inactive)")
+                continue
+
+            if args.onlyPostProcessing:
+                # reuse the existing study; constructing a new one would
+                # discard the results to be post processed
+                study = loadStudy(studyDict)
+                message(
+                    "Functions provided to study are not overwritten by design; this may be changed later."
+                )
+                for job in study.jobList:
+                    job.performPostProcessing()
+                study.performPostProcessing()
+            else:
+                study = Study(studyDict, args)
+                study.run(args)
+
+            os.chdir(upmostDir)
     else:
         infoMessage(
             'Use field "parameterStudies" in config dictionary to define a study.'

@@ -113,6 +113,7 @@ class Job:
             ]
 
         cmd = " ".join(args)
+        interrupted = False
         with open("stderr.txt", "w+") as fErr, open("stdout.txt", "w+") as fOut:
             subproc = subprocess.Popen(
                 cmd, stdout=fOut, stderr=fErr, env=envVars, shell=True
@@ -122,17 +123,14 @@ class Job:
                     # self.updateStatus("running")
                     time.sleep(0.1)
             except KeyboardInterrupt:
+                interrupted = True
                 self.updateStatus("job terminated by user")
                 subproc.kill()
 
-        if subproc.poll() >= 0:
-            self.updateStatus("job exited with code {}".format(subproc.poll()))
+        # only report the exit code; whether a run succeeded is up to the user
+        if not interrupted:
+            self.updateStatus("job exited with code {}".format(subproc.wait()))
             self.performPostProcessing()
-        else:
-            self.updateStatus("ERROR job exited with code {}".format(subproc.poll()))
-            # errorMessage("Job execution exited with an error:", self.name)
-            # message(" --> see stderr.txt or stdout.txt for more information")
-            pass
 
         os.chdir(self.studyResDir)
 
