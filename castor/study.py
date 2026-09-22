@@ -261,10 +261,12 @@ class Study:
                     printStatus(self)
 
         else:
-            for result in map(runJob, self.jobList):
-
-                printStatus(self)
-                pass
+            # no monitor loop as in the parallel branch, so let the running job
+            # redraw the status itself
+            for job in self.jobList:
+                job.onStatusChange = lambda: printStatus(self)
+                job.run()
+                job.onStatusChange = None
 
         self.performPostProcessing()
 

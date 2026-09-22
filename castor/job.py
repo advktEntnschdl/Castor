@@ -38,6 +38,9 @@ class Job:
         else:
             self.ppFunList = []
 
+        # set by a serial study to redraw the status monitor on every change
+        self.onStatusChange = None
+
         os.mkdir(self.resDir)
         # link what the study marked for linking, copy the rest
         provideTree(
@@ -58,6 +61,9 @@ class Job:
         with open(self.staFile, "a") as f:
             f.write(timeStr + "\n")
             f.write(self.status + "\n")
+
+        if self.onStatusChange:
+            self.onStatusChange()
 
     def performPostProcessing(self):
         for ppFun in self.ppFunList:
