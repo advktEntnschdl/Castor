@@ -1,4 +1,5 @@
 import itertools
+import multiprocessing
 import operator
 import os
 import shutil
@@ -8,7 +9,7 @@ from difflib import get_close_matches
 
 import dill as pickle
 
-from .job import Job, getParamDict, getParamStr, getReplaceDictList
+from .job import Job, getParamDict, getParamStr, getReplaceDictList, initWorker
 from .journal import errorMessage, infoMessage, message, printStatus
 from .utils import listFiles, provideFile, provideTree, toList
 
@@ -243,22 +244,40 @@ class Study:
 
         runJob = operator.methodcaller("run")
         if args.parallelJobs[0] > 1:
-            with ProcessPoolExecutor(max_workers=args.parallelJobs[0]) as executor:
+            abortEvent = multiprocessing.Event()
+            with ProcessPoolExecutor(
+                max_workers=args.parallelJobs[0],
+                initializer=initWorker,
+                initargs=(abortEvent,),
+            ) as executor:
                 futures = list(
                     map(lambda job: executor.submit(runJob, job), self.jobList)
                 )
 
                 lastChange = 0.0
                 latestChange = 0.0
-                while not all([future.done() for future in futures]):
-                    for job in self.jobList:
-                        latestChange = max(latestChange, os.path.getmtime(job.staFile))
-                    if latestChange > lastChange:
-                        lastChange = latestChange
+                try:
+                    while not all([future.done() for future in futures]):
+                        for job in self.jobList:
+                            latestChange = max(
+                                latestChange, os.path.getmtime(job.staFile)
+                            )
+                        if latestChange > lastChange:
+                            lastChange = latestChange
+                            printStatus(self)
+                        time.sleep(0.1)
+                    else:
                         printStatus(self)
-                    time.sleep(0.1)
-                else:
+                except KeyboardInterrupt:
+                    # stop queued jobs from starting and let the workers
+                    # kill the running ones
+                    for future in futures:
+                        future.cancel()
+                    abortEvent.set()
+                    executor.shutdown(wait=True)
                     printStatus(self)
+                    errorMessage("KeyboardInterrupt detected.")
+                    raise
 
         else:
             # no monitor loop as in the parallel branch, so let the running job
