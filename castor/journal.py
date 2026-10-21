@@ -1,4 +1,7 @@
 # from rich import print
+import os
+import sys
+from datetime import datetime
 from shutil import get_terminal_size
 from textwrap import wrap
 
@@ -8,6 +11,33 @@ from textwrap import wrap
 # terminal, e.g. when the output is redirected to a log file
 maxCharCentered = get_terminal_size()[0] - 2
 maxCharAligned = maxCharCentered - 2  # 68
+
+# log file of the current study; messages are written to it as well
+_logFile = None
+
+
+def startLog(logFile, title):
+    global _logFile
+    _logFile = logFile
+    writeLog(80 * "=")
+    writeLog(title)
+    writeLog("command: " + " ".join([os.path.basename(sys.argv[0])] + sys.argv[1:]))
+
+
+def stopLog():
+    global _logFile
+    _logFile = None
+
+
+# reopened on every write, so jobs in worker processes can append safely
+def writeLog(string, logFile=None):
+    logFile = logFile or _logFile
+    if not logFile:
+        return
+    timeStr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(logFile, "a") as f:
+        for line in str(string).splitlines() or [""]:
+            f.write("{}  {}\n".format(timeStr, line))
 
 
 def printHeader():
@@ -39,6 +69,8 @@ def message(*args, **kwargs):
         string = str(args[0])
         for arg in args[1:]:
             string += " " + str(arg)
+        if kwargs.get("log", True) and not kwargs.get("makeSpace"):
+            writeLog(string)
         if len(string) < maxCharAligned:
             if not kwargs.get("makeSpace"):
                 printFun(string)
@@ -79,15 +111,12 @@ def checkStatusChange(study):
 
 
 def printStatus(study):
-    message("Study: ", study.name)
+    # the monitor is redrawn often; job status changes are logged by the jobs
+    message("Study: ", study.name, log=False)
     printLine()
     for job in study.jobList:
-        message("Job: ", job.name)
-        with open(job.staFile, "r") as f:
-            line = ""
-            for line in f:
-                pass
-            message(line.strip(), align="right")
+        message("Job: ", job.name, log=False)
+        message(job.readStatus(), align="right", log=False)
     printSepline()
 
 
