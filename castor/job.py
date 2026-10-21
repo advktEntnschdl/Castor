@@ -7,7 +7,7 @@ from datetime import datetime
 
 import numpy as np
 
-from .journal import errorMessage
+from .journal import errorMessage, writeLog
 from .utils import provideTree, toList
 
 # set in the workers of a parallel study; tells their jobs to stop
@@ -44,15 +44,9 @@ class Job:
         self.simConfig = study.simConfig
         self.studyResDir = study.resDir
         self.staFile = os.path.join(self.resDir, self.name + ".cstrsta")
+        self.logFile = study.logFile
 
-        ppFuns = study.postProcessingInstructions.get("afterJob")
-        if ppFuns:
-            if isinstance(ppFuns, list):
-                self.ppFunList = ppFuns
-            else:
-                self.ppFunList = [ppFuns]
-        else:
-            self.ppFunList = []
+        self.ppFunList = study.getJobPostProcessingFunctions()
 
         # set by a serial study to redraw the status monitor on every change
         self.onStatusChange = None
@@ -77,9 +71,22 @@ class Job:
         with open(self.staFile, "a") as f:
             f.write(timeStr + "\n")
             f.write(self.status + "\n")
+        writeLog("Job {}: {}".format(self.name, self.status), self.logFile)
 
         if self.onStatusChange:
             self.onStatusChange()
+
+    # last status written to the status file; empty if the job was never set up
+    def readStatus(self):
+        status = ""
+        if os.path.exists(self.staFile):
+            with open(self.staFile, "r") as f:
+                for status in f:
+                    pass
+        return status.strip()
+
+    def finished(self):
+        return self.readStatus().startswith("job exited with code")
 
     def terminate(self, subproc):
         try:
@@ -111,6 +118,8 @@ class Job:
         # message('Job "{}" started'.format(self.name))
 
         envVars = dict(os.environ)
+        # python block-buffers output to files; write stdout.txt as the job runs
+        envVars["PYTHONUNBUFFERED"] = "1"
         args = []
         if self.type == "EdelweissFE":
             inputFile = os.path.join(
@@ -234,9 +243,10 @@ def getReplaceDictList(paramDict_, expDir=""):
     replaceDictList = [dict(zip(params, valGroup)) for valGroup in groupedVals]
 
     if additionalParamDict:
-        with open(os.path.join(expDir, "INITIAL_Jobs.txt"), "a+") as f:
-            for replaceDict in replaceDictList:
-                f.write(getParamStr([[[], replaceDict]]) + "\n")
+        appendNewLines(
+            os.path.join(expDir, "INITIAL_Jobs.txt"),
+            [getParamStr([[[], replaceDict]]) for replaceDict in replaceDictList],
+        )
 
         for key, val in additionalParamDict.items():
             tempDict = paramDict.copy()
@@ -246,15 +256,33 @@ def getReplaceDictList(paramDict_, expDir=""):
                 dict(zip(params, valGroup)) for valGroup in additionalGroupedVals
             ]
 
-            with open(
-                os.path.join(expDir, "{}_Jobs.txt".format(key.replace("_", ""))), "a+"
-            ) as f:
-                for replaceDict in additionalReplaceDicts:
-                    f.write(getParamStr([[[], replaceDict]]) + "\n")
+            appendNewLines(
+                os.path.join(expDir, "{}_Jobs.txt".format(key.replace("_", ""))),
+                [
+                    getParamStr([[[], replaceDict]])
+                    for replaceDict in additionalReplaceDicts
+                ],
+            )
 
             replaceDictList.extend(additionalReplaceDicts)
 
     return replaceDictList
+
+
+# skip lines already present, so an extended study does not list jobs twice
+def appendNewLines(fileName, lines):
+    presentLines = set()
+    if os.path.exists(fileName):
+        with open(fileName, "r") as f:
+            presentLines = set(f.read().splitlines())
+
+    with open(fileName, "a") as f:
+        for line in lines:
+            if line not in presentLines:
+                f.write(line + "\n")
+                presentLines.add(line)
+
+    return
 
 
 def getParamStr(replaceDefsPerJob):

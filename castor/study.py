@@ -1,3 +1,4 @@
+import filecmp
 import itertools
 import multiprocessing
 import operator
@@ -10,7 +11,7 @@ from difflib import get_close_matches
 import dill as pickle
 
 from .job import Job, getParamDict, getParamStr, getReplaceDictList, initWorker
-from .journal import errorMessage, infoMessage, message, printStatus
+from .journal import errorMessage, infoMessage, message, printStatus, startLog
 from .utils import listFiles, provideFile, provideTree, toList
 
 
@@ -20,7 +21,10 @@ def normalizePath(path):
 
 # restore a study that has already been set up, e.g. to only post process it
 def loadStudy(studyDict):
-    resDir = os.path.abspath(studyDict["resDir"])
+    return loadStudyFromDir(os.path.abspath(studyDict["resDir"]))
+
+
+def loadStudyFromDir(resDir):
     studyFile = os.path.join(resDir, "export", "study.pickle")
     if not os.path.exists(studyFile):
         errorMessage("No study to load found in {}.".format(resDir))
@@ -82,30 +86,47 @@ class Study:
 
         self.checkValues(studyDict)
 
+        extend = False
         if os.path.exists(self.resDir):
             if args.overwrite:
                 message("Overwriting directory {}".format(self.resDir))
                 shutil.rmtree(self.resDir)
+            elif args.extend:
+                message("Extending study in directory {}".format(self.resDir))
+                extend = True
             else:
                 raise FileExistsError(
-                    "Directory {} exists. Use --overwrite keyword if you want to overwrite it.".format(
+                    "Directory {} exists. Use --overwrite keyword if you want to overwrite it or --extend to add new jobs.".format(
                         self.resDir
                     )
                 )
 
-        os.makedirs(self.resDir)
-        os.makedirs(self.shareDir)
-        os.makedirs(self.expDir)
+        if extend:
+            # check before touching anything in the existing study
+            existingJobs = loadStudyFromDir(self.resDir).jobList
+            self.checkProvidedFiles()
+            startLog(self.logFile, "Study {} (extended)".format(self.name))
+            self.getNewProvidedFiles()
+        else:
+            existingJobs = []
+            os.makedirs(self.resDir)
+            os.makedirs(self.shareDir)
+            os.makedirs(self.expDir)
+            startLog(self.logFile, "Study {}".format(self.name))
+            self.getProvidedFiles()
 
-        self.getProvidedFiles()
-
-        self.generateJobListFromConfig()
+        self.generateJobListFromConfig(existingJobs)
 
         printStatus(self)
 
         self.export()
 
         return
+
+    # a property, so studies pickled before logging was added can still log
+    @property
+    def logFile(self):
+        return os.path.join(self.expDir, "castor.log")
 
     def checkFields(self, studyDict):
         raiseError = False
@@ -251,14 +272,14 @@ class Study:
                 initargs=(abortEvent,),
             ) as executor:
                 futures = list(
-                    map(lambda job: executor.submit(runJob, job), self.jobList)
+                    map(lambda job: executor.submit(runJob, job), self.jobsToRun)
                 )
 
                 lastChange = 0.0
                 latestChange = 0.0
                 try:
                     while not all([future.done() for future in futures]):
-                        for job in self.jobList:
+                        for job in self.jobsToRun:
                             latestChange = max(
                                 latestChange, os.path.getmtime(job.staFile)
                             )
@@ -282,7 +303,7 @@ class Study:
         else:
             # no monitor loop as in the parallel branch, so let the running job
             # redraw the status itself
-            for job in self.jobList:
+            for job in self.jobsToRun:
                 job.onStatusChange = lambda: printStatus(self)
                 job.run()
                 job.onStatusChange = None
@@ -320,6 +341,45 @@ class Study:
 
         return
 
+    # pairs of provided files and their copies in share/
+    def providedFilePairs(self):
+        for file in self.providedFiles:
+            file = normalizePath(file)
+            dst = os.path.join(self.shareDir, os.path.basename(file))
+            if os.path.isdir(file):
+                for src in listFiles(file):
+                    yield src, os.path.join(dst, os.path.relpath(src, start=file))
+            else:
+                yield file, dst
+
+    # jobs of an extended study must share the same inputs; only new files may be added
+    def checkProvidedFiles(self):
+        changedFiles = [
+            src
+            for src, dst in self.providedFilePairs()
+            if os.path.exists(dst) and not filecmp.cmp(src, dst, shallow=False)
+        ]
+        for file in changedFiles:
+            errorMessage(
+                "Provided file {} differs from its copy in {}.".format(
+                    file, self.shareDir
+                )
+            )
+        if changedFiles:
+            infoMessage("An extended study can only be provided with new files.")
+            raise ValueError
+
+        return
+
+    def getNewProvidedFiles(self):
+        for src, dst in self.providedFilePairs():
+            if not os.path.exists(dst):
+                infoMessage("Providing new file {}".format(src))
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                provideFile(src, dst)
+
+        return
+
     def performPreProcessing(self):
         for ppFun in self.prepFunList:
             os.chdir(self.resDir)
@@ -332,23 +392,61 @@ class Study:
 
         return
 
-    def generateJobListFromConfig(self):
+    # finished jobs of an extended study are kept, all others are (re)run
+    def generateJobListFromConfig(self, existingJobs):
         replaceDefsPerJob, jobNames, paramDicts = self.getReplaceDefsPerJob()
-        # breakpoint()
+
+        existingJobs = {job.name: job for job in existingJobs}
+        nextId = max((job.id for job in existingJobs.values()), default=-1) + 1
 
         jobList = []
-        jId = 0
+        self.jobsToRun = []
         for replaceDef, jobName, paramDict in zip(
             replaceDefsPerJob, jobNames, paramDicts
         ):
-            jobList.append(Job(self, jobName, paramDict, jId, replaceDef))
-            jId += 1
+            existingJob = existingJobs.pop(jobName, None)
+            if existingJob and existingJob.finished():
+                existingJob.ppFunList = self.getJobPostProcessingFunctions()
+                jobList.append(existingJob)
+                continue
+
+            if existingJob:
+                jId = existingJob.id
+            else:
+                jId = nextId
+                nextId += 1
+
+            # left over from an interrupted run
+            jobResDir = os.path.join(self.resDir, jobName)
+            if os.path.exists(jobResDir):
+                infoMessage("Rerunning unfinished job {}".format(jobName))
+                shutil.rmtree(jobResDir)
+
+            job = Job(self, jobName, paramDict, jId, replaceDef)
+            jobList.append(job)
+            self.jobsToRun.append(job)
+
+        # jobs no longer in the config are kept for post processing
+        for job in existingJobs.values():
+            job.ppFunList = self.getJobPostProcessingFunctions()
+            jobList.append(job)
+
         self.jobList = jobList
+
+        if len(self.jobsToRun) < len(jobList):
+            infoMessage(
+                "{} of {} jobs kept from the existing study".format(
+                    len(jobList) - len(self.jobsToRun), len(jobList)
+                )
+            )
 
         if not len(jobList) > 0:
             raise IOError("Job list is empty. Check input!")
 
         return
+
+    def getJobPostProcessingFunctions(self):
+        return toList(self.postProcessingInstructions.get("afterJob") or [])
 
     def getReplaceDefsPerJob(self):
         replaceDefsPerFile = []
